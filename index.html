@@ -12,7 +12,7 @@
     <!-- Иконка для Apple-устройств (Safari) -->
     <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%2310b981'/><text x='50%25' y='55%25' font-family='sans-serif' font-weight='bold' font-size='90' fill='%230f172a' text-anchor='middle' dy='.3em'>₽</text></svg>">
     
-    <!-- Мета-теги для мобильного отображения в режиме Standalone (как нативное приложение) -->
+    <!-- Мета-теги для мобильного отображения в режиме Standalone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Credit Tracker">
@@ -52,11 +52,19 @@
     </script>
 
     <style>
-        body {
+        html, body {
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
-            /* Предотвращаем резиновый скролл всей страницы на iOS */
             overscroll-behavior: none;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         /* Скрытие полосы прокрутки для внутренних элементов */
         .no-scrollbar::-webkit-scrollbar {
@@ -75,19 +83,19 @@
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen flex items-center justify-center overflow-hidden p-0 sm:p-4">
+<body class="text-slate-100 min-h-screen">
 
-    <!-- Основной контейнер. На мобильных устройствах занимает 100% ширины и высоты. На ПК ведет себя как аккуратный телефон-симулятор -->
-    <div class="relative w-full sm:max-w-[430px] h-screen sm:h-[880px] sm:max-h-[95vh] bg-black sm:rounded-[50px] p-0 sm:p-3 shadow-[0_0_80px_rgba(0,0,0,0.6)] sm:border-4 sm:border-slate-800 overflow-hidden flex flex-col shrink-0">
+    <!-- Основной контейнер. На мобильных устройствах занимает 100% ширины и высоты. -->
+    <div class="relative w-full sm:max-w-[430px] h-full sm:h-[880px] sm:max-h-[95vh] bg-black sm:rounded-[50px] p-0 sm:p-3 shadow-[0_0_80px_rgba(0,0,0,0.6)] sm:border-4 sm:border-slate-800 overflow-hidden flex flex-col shrink-0">
         
-        <!-- Динамический остров смартфона (Только на десктопе, на смартфонах скрываем) -->
+        <!-- Динамический остров смартфона (Только на десктопе) -->
         <div class="hidden sm:flex absolute top-4 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-full z-50 items-center justify-between px-3">
             <div class="w-2.5 h-2.5 bg-slate-900 rounded-full"></div>
             <div class="w-12 h-1 bg-slate-900 rounded-full"></div>
             <div class="w-3 h-3 bg-slate-900 rounded-full"></div>
         </div>
 
-        <!-- Системный статус-бар (Оставляем аккуратным для симуляции, адаптируем безопасную зону) -->
+        <!-- Системный статус-бар -->
         <div class="flex justify-between items-center px-6 pt-3 pb-2 text-[11px] font-medium text-slate-100 z-40 select-none bg-slate-950 safe-top">
             <span id="statusBarTime">09:41</span>
             <div class="flex items-center gap-1.5">
@@ -100,7 +108,7 @@
         </div>
 
         <!-- Внутренний контейнер экрана (scrollable) с поддержкой safe-area-bottom -->
-        <div class="flex-1 bg-[#f3f4f6] text-slate-900 overflow-y-auto no-scrollbar rounded-t-[20px] sm:rounded-[38px] pb-24 relative" id="phoneScreen">
+        <div class="flex-1 bg-[#f3f4f6] text-slate-900 overflow-y-auto no-scrollbar rounded-t-[20px] sm:rounded-[38px] pb-24 relative animate-fade-in" id="phoneScreen">
             
             <!-- ЭКРАН: Главная -->
             <div id="screen-home" class="app-screen space-y-5 p-4 pt-4">
@@ -118,16 +126,16 @@
                     <div class="absolute right-10 -top-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                     
                     <span class="text-xs font-semibold uppercase tracking-wider opacity-80">Общий долг</span>
-                    <div class="text-3xl font-extrabold mt-1.5 tracking-tight" id="totalDebtVal">1 240 000 ₽</div>
+                    <div class="text-3xl font-extrabold mt-1.5 tracking-tight" id="totalDebtVal">0 ₽</div>
                     
                     <div class="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-white/20">
                         <div>
                             <span class="text-[11px] font-medium opacity-70 block">Ежемесячные платежи</span>
-                            <span class="text-base font-bold mt-0.5 block" id="monthlyPayVal">59 000 ₽</span>
+                            <span class="text-base font-bold mt-0.5 block" id="monthlyPayVal">0 ₽</span>
                         </div>
                         <div>
                             <span class="text-[11px] font-medium opacity-70 block">Переплата</span>
-                            <span class="text-base font-bold mt-0.5 block" id="overpayVal">410 000 ₽</span>
+                            <span class="text-base font-bold mt-0.5 block" id="overpayVal">0 ₽</span>
                         </div>
                     </div>
                 </div>
@@ -137,7 +145,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <h3 class="font-extrabold text-slate-900 text-sm">Контроль оплат</h3>
-                            <p class="text-[10px] text-slate-400">Отметьте, чтобы не просрочить</p>
+                            <p class="text-[10px] text-slate-400">Отметьте для внесения платежа</p>
                         </div>
                         <span id="currentMonthLabel" class="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full uppercase tracking-wider">Месяц</span>
                     </div>
@@ -258,11 +266,11 @@
                 </div>
             </div>
 
-            <!-- ЭКРАН: Настройки (Интегрирована инструкция PWA и преимущества) -->
+            <!-- ЭКРАН: Настройки -->
             <div id="screen-settings" class="app-screen hidden space-y-4 p-4 pt-4">
                 <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Настройки</h2>
                 
-                <!-- ПРЕИМУЩЕСТВА КРЕДИТ ТРЕКЕРА (Ранее были на левой панели) -->
+                <!-- ПРЕИМУЩЕСТВА КРЕДИТ ТРЕКЕРА -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">О приложении Credit Tracker</h3>
                     <div class="grid grid-cols-1 gap-3.5 text-xs text-slate-700">
@@ -270,7 +278,7 @@
                             <span class="text-lg">📊</span>
                             <div>
                                 <strong class="text-slate-900 block font-semibold">Все кредиты в одном месте</strong>
-                                Следите за остатком, платежами и сроками погашения прямо со смартфона.
+                                Следите за остатком, платежами и назначениями прямо со смартфона.
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
@@ -290,7 +298,7 @@
                     </div>
                 </div>
 
-                <!-- ИНСТРУКЦИЯ ПО УСТАНОВКЕ (Перенесено с левой панели ПК) -->
+                <!-- ИНСТРУКЦИЯ ПО УСТАНОВКЕ -->
                 <div class="bg-indigo-950 text-indigo-100 rounded-2xl p-5 border border-indigo-900 shadow-sm space-y-3.5">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">✨</span>
@@ -359,7 +367,7 @@
                     <div class="p-4 space-y-2">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h3 class="text-sm font-semibold text-slate-800">Вход по Face ID / Touch ID</h3>
+                                <h3 class="text-sm font-semibold text-slate-800">Вход по Face ID</h3>
                                 <p class="text-xs text-slate-500">Биометрическая разблокировка</p>
                             </div>
                             <div id="biometricToggleContainer">
@@ -405,7 +413,7 @@
                     <div class="p-4 flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-semibold text-slate-800">Тестовые данные</h3>
-                            <p class="text-xs text-slate-500">Сбросить до исходных (как на скрине)</p>
+                            <p class="text-xs text-slate-500">Сбросить до исходных</p>
                         </div>
                         <button onclick="resetToDemo()" class="bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold px-3 py-2 rounded-xl transition border border-rose-100">
                             Сбросить
@@ -416,7 +424,7 @@
 
         </div>
 
-        <!-- Нижняя панель навигации (Tab Bar) с защитой зоны safe-area-bottom на современных экранах -->
+        <!-- Нижняя панель навигации (Tab Bar) -->
         <div class="absolute bottom-4 left-3 right-3 bg-white/95 backdrop-blur-md rounded-3xl h-16 shadow-lg border border-slate-200/50 flex items-center justify-between px-6 z-40 select-none safe-bottom">
             
             <!-- Главная -->
@@ -452,7 +460,7 @@
 
         </div>
 
-        <!-- Имитация полоски Home (Скрываем на смартфонах) -->
+        <!-- Имитация полоски Home -->
         <div class="hidden sm:block absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900 rounded-full z-50"></div>
 
         <!-- ЭКРАН БЛОКИРОВКИ PIN-КОДОМ / FACE ID -->
@@ -557,6 +565,21 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Изменение суммы транша -->
+    <div id="trancheEditModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center z-[100] p-4 hidden">
+        <div class="bg-white rounded-3xl w-full max-w-xs p-5 text-slate-800 space-y-4 shadow-2xl border border-slate-100">
+            <h4 class="font-extrabold text-slate-900 text-sm" id="trancheEditTitle">Изменить транш</h4>
+            <p class="text-[10px] text-slate-500 leading-relaxed" id="trancheEditHelpText">Введите новую сумму платежа</p>
+            <div>
+                <input type="number" id="trancheEditInput" step="0.01" class="w-full bg-slate-100 rounded-xl p-3 border border-slate-200 outline-none text-sm font-extrabold text-indigo-700 focus:ring-2 focus:ring-indigo-500" placeholder="0.00" required>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeTrancheEditModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">Отмена</button>
+                <button type="button" onclick="saveTrancheEdit()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <!-- МОДАЛЬНОЕ ОКНО: Добавление нового кредита -->
     <div id="addCreditModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-[80] p-4 hidden">
         <div class="bg-white rounded-3xl w-full max-w-md p-6 text-slate-800 space-y-4 shadow-2xl border border-slate-100">
@@ -588,35 +611,35 @@
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Тип кредита</label>
-                    <input type="text" id="formType" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="Например: Потребительский, Ипотека, Автокредит" required>
+                    <label class="block font-bold text-slate-700 mb-1">Назначение / Тип кредита</label>
+                    <input type="text" id="formType" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="Например: За обучение, На машину, Ипотека" required>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Общая сумма кредита</label>
-                        <input type="number" id="formTotalAmt" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="800 000" required min="1">
+                        <label class="block font-bold text-slate-700 mb-1">Сумма кредита (с копейками)</label>
+                        <input type="number" id="formTotalAmt" step="0.01" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="800000.00" required min="1">
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Остаток долга</label>
-                        <input type="number" id="formPaidAmt" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="420 000 (Или автозаполнение)">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Ежемесячный платёж</label>
-                        <input type="number" id="formMonthly" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="25 000 (Авторасчёт)">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Переплата (Всего)</label>
-                        <input type="number" id="formOverpayment" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="190 000 (Авторасчёт)">
+                        <label class="block font-bold text-slate-700 mb-1">Остаток долга (с копейками)</label>
+                        <input type="number" id="formPaidAmt" step="0.01" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="420000.50">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Ближайший платёж (Число)</label>
+                        <label class="block font-bold text-slate-700 mb-1">Платёж в месяц (с копейками)</label>
+                        <input type="number" id="formMonthly" step="0.01" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="25000.00">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Переплата (с копейками)</label>
+                        <input type="number" id="formOverpayment" step="0.01" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="190000.00">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">День платежа (Число)</label>
                         <input type="number" id="formPaymentDay" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none" placeholder="15" required min="1" max="31">
                     </div>
                     <div>
@@ -644,31 +667,31 @@
         const defaultCredits = [
             {
                 bank: 'Сбербанк',
-                type: 'Потребительский кредит',
-                totalAmount: 845000, 
-                remainingAmount: 420000,
-                monthlyPayment: 25000,
-                overpayment: 190000,
+                type: 'За обучение',
+                totalAmount: 845000.00, 
+                remainingAmount: 420000.55,
+                monthlyPayment: 25000.00,
+                overpayment: 190000.00,
                 paymentDay: 15,
                 status: 'unpaid'
             },
             {
                 bank: 'Т-Банк',
-                type: 'Потребительский кредит',
-                totalAmount: 300000,
-                remainingAmount: 180000,
-                monthlyPayment: 12000,
-                overpayment: 60000,
+                type: 'На машину',
+                totalAmount: 300000.00,
+                remainingAmount: 180000.10,
+                monthlyPayment: 12000.00,
+                overpayment: 60000.00,
                 paymentDay: 22,
                 status: 'unpaid'
             },
             {
                 bank: 'ВТБ',
                 type: 'Ипотека',
-                totalAmount: 2500000,
-                remainingAmount: 640000,
-                monthlyPayment: 22000,
-                overpayment: 160000,
+                totalAmount: 2500000.00,
+                remainingAmount: 640000.00,
+                monthlyPayment: 22000.00,
+                overpayment: 160000.00,
                 paymentDay: 5,
                 status: 'paid'
             }
@@ -682,6 +705,11 @@
         let pinCodeState = 'locked'; 
         let currentPinDraft = '';
         let temporaryPinStorage = '';
+
+        // Переменные для редактирования конкретного транша
+        let activeEditCreditIndex = -1;
+        let activeEditTrancheStep = -1;
+        let activeEditIsLast = false;
 
         window.onload = function() {
             // Загрузка валюты
@@ -737,7 +765,6 @@
                 document.getElementById('lockScreenSubtext').innerText = "Введите PIN-код для входа";
                 drawPinDots(0);
 
-                // Если Face ID включен, запускаем сканирование при входе автоматически через секунду
                 const isBiometricEnabled = localStorage.getItem('biometric_enabled') === 'true';
                 if (isBiometricEnabled) {
                     document.getElementById('lockScreenBiometricBtn').classList.remove('hidden');
@@ -1064,8 +1091,15 @@
             renderCreditsTabList();
         }
 
-        function formatMoney(amount) {
-            return Number(amount).toLocaleString('ru-RU') + ' ' + currentCurrency;
+        // Форматирование валют с возможностью округления для главного экрана
+        function formatMoney(amount, exact = false) {
+            const val = parseFloat(amount) || 0;
+            if (exact) {
+                // Точное отображение с копейками
+                return val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currentCurrency;
+            }
+            // Округлённое отображение на Главном экране
+            return Math.round(val).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ' + currentCurrency;
         }
 
         function getPaymentDateThisMonth(day) {
@@ -1149,6 +1183,65 @@
             `;
         }
 
+        // Салют-конфетти при полном погашении кредита
+        function triggerConfetti() {
+            const canvas = document.createElement('canvas');
+            canvas.className = 'fixed inset-0 pointer-events-none z-[200] w-full h-full';
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+            
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899'];
+            const particles = [];
+
+            // Создаем 150 разноцветных частиц на плоскости мобильного экрана
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: width / 2,
+                    y: height * 0.7,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.7) * 16 - 8,
+                    radius: Math.random() * 5 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    opacity: 1,
+                    gravity: 0.25,
+                    decay: Math.random() * 0.015 + 0.01
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                let alive = false;
+                particles.forEach(p => {
+                    if (p.opacity > 0) {
+                        alive = true;
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += p.gravity;
+                        p.opacity -= p.decay;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = Math.max(0, p.opacity);
+                        ctx.fill();
+                    }
+                });
+                if (alive) {
+                    requestAnimationFrame(animate);
+                } else {
+                    canvas.remove();
+                }
+            }
+            animate();
+        }
+
         function renderAll() {
             renderMainCard();
             renderCurrentMonthChecklist();
@@ -1160,22 +1253,25 @@
             updateBiometricSettingsUI();
         }
 
+        // Отображение округлённых сумм на карточке общего долга
         function renderMainCard() {
             let totalRemaining = 0;
             let totalMonthly = 0;
             let totalOverpay = 0;
 
             credits.forEach(c => {
-                totalRemaining += Number(c.remainingAmount);
-                totalMonthly += Number(c.monthlyPayment);
-                totalOverpay += Number(c.overpayment);
+                totalRemaining += parseFloat(c.remainingAmount) || 0;
+                totalMonthly += parseFloat(c.monthlyPayment) || 0;
+                totalOverpay += parseFloat(c.overpayment) || 0;
             });
 
-            document.getElementById('totalDebtVal').innerText = formatMoney(totalRemaining);
-            document.getElementById('monthlyPayVal').innerText = formatMoney(totalMonthly);
-            document.getElementById('overpayVal').innerText = formatMoney(totalOverpay);
+            // На главной карточке показываем аккуратное округление
+            document.getElementById('totalDebtVal').innerText = formatMoney(totalRemaining, false);
+            document.getElementById('monthlyPayVal').innerText = formatMoney(totalMonthly, false);
+            document.getElementById('overpayVal').innerText = formatMoney(totalOverpay, false);
         }
 
+        // Чек-лист контроля оплат с округлением на главном экране и точным именем
         function renderCurrentMonthChecklist() {
             const container = document.getElementById('currentMonthChecklist');
             container.innerHTML = '';
@@ -1216,6 +1312,9 @@
                 }`;
                 item.onclick = () => togglePaymentStatus(index);
 
+                // Округление платежа на главном экране
+                const roundedMonthlyPayment = formatMoney(c.monthlyPayment, false);
+
                 item.innerHTML = `
                     <div class="flex items-center gap-3 overflow-hidden">
                         <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 border-2 ${
@@ -1230,8 +1329,11 @@
                             </svg>
                         </div>
                         <div class="truncate">
-                            <h4 class="font-bold text-xs leading-snug truncate ${isPaid ? 'line-through opacity-60' : ''}">${c.bank}</h4>
-                            <p class="text-[10px] font-semibold opacity-70">${formatMoney(c.monthlyPayment)}</p>
+                            <!-- Подгружаем имя и назначение/тип кредита -->
+                            <h4 class="font-bold text-xs leading-snug truncate ${isPaid ? 'line-through opacity-60' : ''}">
+                                ${c.bank} <span class="text-[10px] font-normal text-slate-500">(${c.type})</span>
+                            </h4>
+                            <p class="text-[10px] font-semibold opacity-70">${roundedMonthlyPayment}</p>
                         </div>
                     </div>
                     
@@ -1253,6 +1355,42 @@
             document.getElementById('monthlyProgressText').innerText = `${paidCount} из ${totalCount}`;
             const progressPercent = totalCount > 0 ? (paidCount / totalCount) * 100 : 0;
             document.getElementById('monthlyProgressBar').style.width = `${progressPercent}%`;
+        }
+
+        // Изменение статуса оплаты на Главном экране (Быстрый Toggle - как просил пользователь)
+        function togglePaymentStatus(index) {
+            const c = credits[index];
+            if (c.status === 'unpaid') {
+                c.status = 'paid';
+                
+                // Рассчитываем и вносим платеж (с копейками)
+                const currentDue = parseFloat(c.monthlyPayment) || 0;
+                const nextRemaining = Math.max(0, parseFloat((c.remainingAmount - currentDue).toFixed(2)));
+                
+                // Запоминаем фактически оплаченную сумму для возможного отката
+                c.lastPaidAmount = parseFloat((c.remainingAmount - nextRemaining).toFixed(2));
+                c.remainingAmount = nextRemaining;
+
+                showToast(`Платёж по кредиту "${c.bank}" выполнен успешно!`);
+
+                // Если кредит полностью закрыт - запускаем конфетти!
+                if (c.remainingAmount === 0) {
+                    setTimeout(() => {
+                        triggerConfetti();
+                        showToast(`🎉 Поздравляем! Кредит "${c.bank}" полностью погашен!`);
+                    }, 300);
+                }
+            } else {
+                c.status = 'unpaid';
+                // Откатываем сумму обратно
+                const restoredAmt = c.lastPaidAmount ? parseFloat(c.lastPaidAmount) : parseFloat(c.monthlyPayment);
+                c.remainingAmount = parseFloat((parseFloat(c.remainingAmount) + restoredAmt).toFixed(2));
+                delete c.lastPaidAmount;
+                showToast(`Оплата отменена для "${c.bank}"`);
+            }
+
+            localStorage.setItem('user_credits', JSON.stringify(credits));
+            renderAll();
         }
 
         function renderUpcomingPayments() {
@@ -1281,10 +1419,10 @@
                 div.innerHTML = `
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full ${daysDiff < 0 ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}"></span>
-                        <span class="font-semibold text-slate-800">${c.bank}</span>
+                        <span class="font-semibold text-slate-800">${c.bank} <span class="text-[10px] font-normal text-slate-400">(${c.type})</span></span>
                     </div>
                     <div class="text-right">
-                        <span class="font-bold text-slate-900 block">${formatMoney(c.monthlyPayment)}</span>
+                        <span class="font-bold text-slate-900 block">${formatMoney(c.monthlyPayment, false)}</span>
                         <span class="text-[10px] text-slate-500 font-medium">Крайний срок: ${c.paymentDay} числа • ${daysText}</span>
                     </div>
                 `;
@@ -1292,17 +1430,21 @@
             });
         }
 
+        // Открытие списка траншей во всплывающем окне
         function openTranchesModal(index, event) {
             if (event) event.stopPropagation();
             const c = credits[index];
+            activeEditCreditIndex = index;
             
             document.getElementById('detailBankName').innerText = c.bank;
             document.getElementById('detailLoanType').innerText = c.type;
-            document.getElementById('detailRemainingVal').innerText = formatMoney(c.remainingAmount);
-            document.getElementById('detailOverpayVal').innerText = formatMoney(c.overpayment);
-            document.getElementById('detailMonthlyVal').innerText = formatMoney(c.monthlyPayment);
             
-            const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(c.remainingAmount / c.monthlyPayment) : 0;
+            // Показываем точные копейки в карточке параметров
+            document.getElementById('detailRemainingVal').innerText = formatMoney(c.remainingAmount, true);
+            document.getElementById('detailOverpayVal').innerText = formatMoney(c.overpayment, true);
+            document.getElementById('detailMonthlyVal').innerText = formatMoney(c.monthlyPayment, true);
+            
+            const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(parseFloat(c.remainingAmount) / parseFloat(c.monthlyPayment)) : 0;
             document.getElementById('detailTranchesCountVal').innerText = tranchesLeft;
             document.getElementById('detailEndDateVal').innerText = calculateEndDate(c.paymentDay, tranchesLeft);
 
@@ -1311,7 +1453,7 @@
             const tranchesListContainer = document.getElementById('individualTranchesList');
             tranchesListContainer.innerHTML = '';
 
-            let simulatedRemaining = Number(c.remainingAmount);
+            let simulatedRemaining = parseFloat(c.remainingAmount) || 0;
             const today = new Date();
             let simYear = today.getFullYear();
             let simMonth = today.getMonth(); 
@@ -1324,30 +1466,49 @@
                 `;
             } else {
                 for (let step = 1; step <= tranchesLeft; step++) {
-                    const payAmt = Math.min(simulatedRemaining, c.monthlyPayment);
-                    simulatedRemaining -= payAmt;
+                    const payAmt = Math.min(simulatedRemaining, parseFloat(c.monthlyPayment));
+                    const nextSimulatedRemaining = Math.max(0, parseFloat((simulatedRemaining - payAmt).toFixed(2)));
 
                     const trancheDate = new Date(simYear, simMonth + (step - 1), c.paymentDay);
                     const dateString = trancheDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    
+                    const isLast = (step === tranchesLeft);
 
                     const row = document.createElement('div');
-                    row.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition text-xs";
+                    row.className = `flex items-center justify-between p-2.5 rounded-xl border transition text-xs ${
+                        isLast 
+                        ? 'bg-amber-50/70 border-amber-200 hover:bg-amber-100/60' 
+                        : 'bg-slate-50 border-slate-100 hover:bg-slate-100/60'
+                    }`;
+                    
                     row.innerHTML = `
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-5 h-5 rounded-md bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center text-[10px]">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <span class="w-5 h-5 rounded-md bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center text-[10px] shrink-0">
                                 ${step}
                             </span>
-                            <div>
-                                <span class="font-bold text-slate-800 block">Транш #${step}</span>
-                                <span class="text-[9px] text-slate-400 font-medium">Запланирован на: ${dateString}</span>
+                            <div class="truncate">
+                                <span class="font-bold text-slate-800 block truncate">
+                                    ${isLast ? '🔔 Последний транш' : `Транш #${step}`}
+                                </span>
+                                <span class="text-[9px] text-slate-400 font-medium">${dateString}</span>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <span class="font-extrabold text-slate-900 block">${formatMoney(payAmt)}</span>
-                            <span class="text-[9px] text-slate-400 font-medium">Остаток: ${formatMoney(simulatedRemaining)}</span>
+                        <div class="text-right flex items-center gap-3 shrink-0">
+                            <div>
+                                <span class="font-extrabold text-slate-900 block">${formatMoney(payAmt, true)}</span>
+                                <span class="text-[9px] text-slate-400 font-medium">Остаток: ${formatMoney(nextSimulatedRemaining, true)}</span>
+                            </div>
+                            
+                            <!-- Кнопка редактирования транша -->
+                            <button onclick="editTrancheInline(${index}, ${step}, ${isLast}, event)" class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
                         </div>
                     `;
                     tranchesListContainer.appendChild(row);
+                    simulatedRemaining = nextSimulatedRemaining;
                 }
             }
 
@@ -1358,15 +1519,83 @@
             document.getElementById('tranchesDetailModal').classList.add('hidden');
         }
 
+        // Инициализация редактирования транша прямо в детальном графике
+        function editTrancheInline(creditIndex, trancheStep, isLast, event) {
+            if (event) event.stopPropagation();
+            
+            const c = credits[creditIndex];
+            activeEditCreditIndex = creditIndex;
+            activeEditTrancheStep = trancheStep;
+            activeEditIsLast = isLast;
+
+            const modalTitleEl = document.getElementById('trancheEditTitle');
+            const helpTextEl = document.getElementById('trancheEditHelpText');
+            const inputEl = document.getElementById('trancheEditInput');
+
+            if (isLast) {
+                // Если редактируем последний транш - редактируем финальный остаток долга напрямую
+                modalTitleEl.innerText = "Изменить последний транш";
+                helpTextEl.innerHTML = "Этот транш закрывает кредит. Изменение суммы <strong>скорректирует общий остаток долга</strong> банка.";
+                
+                // Вычисляем размер текущего последнего транша
+                const precedingCount = trancheStep - 1;
+                const calculatedLastVal = parseFloat((c.remainingAmount - (precedingCount * c.monthlyPayment)).toFixed(2));
+                inputEl.value = calculatedLastVal.toFixed(2);
+            } else {
+                // Редактируем стандартный транш
+                modalTitleEl.innerText = `Изменить стандартный транш #${trancheStep}`;
+                helpTextEl.innerHTML = "Изменение этой суммы <strong>обновит величину ежемесячного платежа</strong> для всех стандартных траншей и перенесется на Главный экран.";
+                inputEl.value = parseFloat(c.monthlyPayment).toFixed(2);
+            }
+
+            document.getElementById('trancheEditModal').classList.remove('hidden');
+        }
+
+        function closeTrancheEditModal() {
+            document.getElementById('trancheEditModal').classList.add('hidden');
+        }
+
+        // Сохранение отредактированного транша и автоматический перенос данных
+        function saveTrancheEdit() {
+            if (activeEditCreditIndex === -1) return;
+            
+            const c = credits[activeEditCreditIndex];
+            const newValue = parseFloat(parseFloat(document.getElementById('trancheEditInput').value).toFixed(2)) || 0;
+
+            if (newValue <= 0) {
+                alert("Пожалуйста, введите корректную сумму платежа больше нуля.");
+                return;
+            }
+
+            if (activeEditIsLast) {
+                // Изменен последний платеж -> пересчитываем и сохраняем полный остаток долга
+                const precedingCount = activeEditTrancheStep - 1;
+                const precedingTotal = precedingCount * c.monthlyPayment;
+                c.remainingAmount = parseFloat((precedingTotal + newValue).toFixed(2));
+                showToast(`Финальный остаток долга скорректирован!`);
+            } else {
+                // Изменен стандартный транш -> меняем ежемесячный платеж
+                c.monthlyPayment = newValue;
+                showToast(`Ежемесячный платёж обновлён до ${formatMoney(newValue, true)} и перенесён на главный экран!`);
+            }
+
+            localStorage.setItem('user_credits', JSON.stringify(credits));
+            closeTrancheEditModal();
+            
+            // Перерисовываем весь экран и обновляем модальное окно деталей
+            renderAll();
+            openTranchesModal(activeEditCreditIndex);
+        }
+
         function renderCreditsTabList() {
             const container = document.getElementById('allCreditsContainer');
             container.innerHTML = '';
 
             let filtered = [...credits];
             if (currentFilter === 'active') {
-                filtered = credits.filter(c => Number(c.remainingAmount) > 0);
+                filtered = credits.filter(c => parseFloat(c.remainingAmount) > 0);
             } else if (currentFilter === 'paid') {
-                filtered = credits.filter(c => Number(c.remainingAmount) === 0);
+                filtered = credits.filter(c => parseFloat(c.remainingAmount) === 0);
             }
 
             if (filtered.length === 0) {
@@ -1379,12 +1608,12 @@
             }
 
             filtered.forEach((c, index) => {
-                const total = Number(c.totalAmount);
-                const remaining = Number(c.remainingAmount);
+                const total = parseFloat(c.totalAmount) || 0;
+                const remaining = parseFloat(c.remainingAmount) || 0;
                 const paid = total - remaining;
                 const paidPercent = total > 0 ? Math.round((paid / total) * 100) : 0;
                 
-                const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(remaining / c.monthlyPayment) : 0;
+                const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(remaining / parseFloat(c.monthlyPayment)) : 0;
                 const calculatedEndDateStr = calculateEndDate(c.paymentDay, tranchesLeft);
 
                 const div = document.createElement('div');
@@ -1400,8 +1629,8 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="font-extrabold text-slate-900 text-sm block">${formatMoney(remaining)}</span>
-                            <span class="text-[10px] text-slate-500 block font-medium">из ${formatMoney(total)}</span>
+                            <span class="font-extrabold text-slate-900 text-sm block">${formatMoney(remaining, true)}</span>
+                            <span class="text-[10px] text-slate-500 block font-medium">из ${formatMoney(total, true)}</span>
                         </div>
                     </div>
 
@@ -1412,10 +1641,10 @@
                     <div class="grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-500 pt-2 border-t border-slate-50/80">
                         <div>
                             <span class="block text-indigo-600 font-bold">Осталось траншей: ${tranchesLeft}</span>
-                            <span class="block">Переплата: <strong class="text-rose-600">${formatMoney(c.overpayment)}</strong></span>
+                            <span class="block">Переплата: <strong class="text-rose-600">${formatMoney(c.overpayment, true)}</strong></span>
                         </div>
                         <div class="text-right flex flex-col justify-between">
-                            <span class="block">Платёж: <strong class="text-slate-800">${formatMoney(c.monthlyPayment)}</strong></span>
+                            <span class="block">Платёж: <strong class="text-slate-800">${formatMoney(c.monthlyPayment, true)}</strong></span>
                             <span class="block text-[9px] text-slate-400">Срок до: <strong class="text-slate-700">${calculatedEndDateStr}</strong></span>
                         </div>
                     </div>
@@ -1448,8 +1677,9 @@
             const today = new Date();
             let simulationCredits = credits.map(c => ({
                 bank: c.bank,
-                remaining: Number(c.remainingAmount),
-                payment: Number(c.monthlyPayment),
+                type: c.type,
+                remaining: parseFloat(c.remainingAmount) || 0,
+                payment: parseFloat(c.monthlyPayment) || 0,
                 day: Number(c.paymentDay)
             }));
 
@@ -1473,10 +1703,10 @@
                         monthlyTranchesHTML += `
                             <div class="flex justify-between items-center text-xs py-1.5 border-b border-slate-100 last:border-0">
                                 <div>
-                                    <span class="font-bold text-slate-800 block">${sc.bank}</span>
-                                    <span class="text-[10px] text-slate-400">Платёж ${sc.day} числа • Остаток: ${formatMoney(sc.remaining - paidInSimMonth)}</span>
+                                    <span class="font-bold text-slate-800 block">${sc.bank} <span class="text-[10px] font-normal text-slate-500">(${sc.type})</span></span>
+                                    <span class="text-[10px] text-slate-400">Платёж ${sc.day} числа • Остаток: ${formatMoney(sc.remaining - paidInSimMonth, true)}</span>
                                 </div>
-                                <span class="font-extrabold text-slate-900">${formatMoney(paidInSimMonth)}</span>
+                                <span class="font-extrabold text-slate-900">${formatMoney(paidInSimMonth, true)}</span>
                             </div>
                         `;
                     }
@@ -1484,7 +1714,7 @@
 
                 simulationCredits = simulationCredits.map(sc => ({
                     ...sc,
-                    remaining: Math.max(0, sc.remaining - sc.payment)
+                    remaining: Math.max(0, parseFloat((sc.remaining - sc.payment).toFixed(2)))
                 }));
 
                 if (monthlyTotalSum === 0) {
@@ -1494,7 +1724,7 @@
                 monthBlock.innerHTML = `
                     <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
                         <h4 class="font-extrabold text-indigo-700 text-xs uppercase tracking-wider">${simMonthName} ${simYear}</h4>
-                        <span class="font-extrabold text-slate-800 text-xs bg-white border border-slate-100 px-2.5 py-1 rounded-lg">Итого: ${formatMoney(monthlyTotalSum)}</span>
+                        <span class="font-extrabold text-slate-800 text-xs bg-white border border-slate-100 px-2.5 py-1 rounded-lg">Итого: ${formatMoney(monthlyTotalSum, false)}</span>
                     </div>
                     <div class="divide-y divide-slate-100">
                         ${monthlyTranchesHTML}
@@ -1511,23 +1741,23 @@
             let totalTranches = 0;
 
             credits.forEach(c => {
-                totalAmountAll += Number(c.totalAmount);
-                totalRemainingAll += Number(c.remainingAmount);
-                totalOverpayAll += Number(c.overpayment);
+                totalAmountAll += parseFloat(c.totalAmount) || 0;
+                totalRemainingAll += parseFloat(c.remainingAmount) || 0;
+                totalOverpayAll += parseFloat(c.overpayment) || 0;
                 if (c.monthlyPayment > 0) {
-                    totalTranches += Math.ceil(Number(c.remainingAmount) / Number(c.monthlyPayment));
+                    totalTranches += Math.ceil(parseFloat(c.remainingAmount) / parseFloat(c.monthlyPayment));
                 }
             });
 
             const totalPaidAll = totalAmountAll - totalRemainingAll;
             const progressPercent = totalAmountAll > 0 ? Math.round((totalPaidAll / totalAmountAll) * 100) : 0;
 
-            document.getElementById('statPaidSum').innerText = formatMoney(totalPaidAll);
+            document.getElementById('statPaidSum').innerText = formatMoney(totalPaidAll, true);
             document.getElementById('statOverallProgressPercent').innerText = `${progressPercent}%`;
             document.getElementById('statOverallProgressBar').style.width = `${progressPercent}%`;
-            document.getElementById('statRemainingToPay').innerText = `Осталось выплатить: ${formatMoney(totalRemainingAll)}`;
+            document.getElementById('statRemainingToPay').innerText = `Осталось выплатить: ${formatMoney(totalRemainingAll, true)}`;
             document.getElementById('statTranchesLeft').innerText = totalTranches;
-            document.getElementById('statTotalOverpay').innerText = formatMoney(totalOverpayAll);
+            document.getElementById('statTotalOverpay').innerText = formatMoney(totalOverpayAll, true);
 
             const bankDistContainer = document.getElementById('bankDistributionContainer');
             bankDistContainer.innerHTML = '';
@@ -1542,7 +1772,7 @@
                 if (!bankGroup[c.bank]) {
                     bankGroup[c.bank] = 0;
                 }
-                bankGroup[c.bank] += Number(c.remainingAmount);
+                bankGroup[c.bank] += parseFloat(c.remainingAmount) || 0;
             });
 
             for (let bank in bankGroup) {
@@ -1554,7 +1784,7 @@
                 div.innerHTML = `
                     <div class="flex justify-between text-xs">
                         <span class="font-semibold text-slate-700">${bank}</span>
-                        <span class="font-bold text-slate-900">${formatMoney(bankDebt)} (${percent}%)</span>
+                        <span class="font-bold text-slate-900">${formatMoney(bankDebt, true)} (${percent}%)</span>
                     </div>
                     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div class="bg-indigo-600 h-full rounded-full" style="width: ${percent}%"></div>
@@ -1562,23 +1792,6 @@
                 `;
                 bankDistContainer.appendChild(div);
             }
-        }
-
-        function togglePaymentStatus(index) {
-            const c = credits[index];
-            if (c.status === 'unpaid') {
-                c.status = 'paid';
-                const nextRemaining = Math.max(0, c.remainingAmount - c.monthlyPayment);
-                c.remainingAmount = nextRemaining;
-                showToast(`Платёж по кредиту "${c.bank}" отмечен как выполненный!`);
-            } else {
-                c.status = 'unpaid';
-                c.remainingAmount = Math.min(c.totalAmount, Number(c.remainingAmount) + Number(c.monthlyPayment));
-                showToast(`Оплата отменена для "${c.bank}"`);
-            }
-
-            localStorage.setItem('user_credits', JSON.stringify(credits));
-            renderAll();
         }
 
         function setupFormAutoCalculations() {
@@ -1602,23 +1815,23 @@
             const overpayInput = document.getElementById('formOverpayment');
 
             if (remaining === '' && total > 0) {
-                remainingInput.placeholder = `${total} (Равно общей сумме)`;
+                remainingInput.placeholder = `${total.toFixed(2)} (Равно общей сумме)`;
                 remainingInput.dataset.autoVal = total;
             } else {
                 delete remainingInput.dataset.autoVal;
             }
 
             if (monthly === '' && total > 0) {
-                const calculatedMonthly = Math.round(total / 12);
-                monthlyInput.placeholder = `${calculatedMonthly} (Расчёт на 12 мес.)`;
+                const calculatedMonthly = parseFloat((total / 12).toFixed(2));
+                monthlyInput.placeholder = `${calculatedMonthly.toFixed(2)} (Расчёт на 12 мес.)`;
                 monthlyInput.dataset.autoVal = calculatedMonthly;
             } else {
                 delete monthlyInput.dataset.autoVal;
             }
 
             if (overpay === '' && total > 0) {
-                const calculatedOverpay = Math.round(total * 0.15); 
-                overpayInput.placeholder = `${calculatedOverpay} (Расчёт по среднему)`;
+                const calculatedOverpay = parseFloat((total * 0.15).toFixed(2)); 
+                overpayInput.placeholder = `${calculatedOverpay.toFixed(2)} (Расчёт по среднему)`;
                 overpayInput.dataset.autoVal = calculatedOverpay;
             } else {
                 delete overpayInput.dataset.autoVal;
@@ -1694,16 +1907,16 @@
             }
 
             const type = document.getElementById('formType').value;
-            const totalAmount = Number(document.getElementById('formTotalAmt').value);
+            const totalAmount = parseFloat(parseFloat(document.getElementById('formTotalAmt').value).toFixed(2));
 
             const paidInput = document.getElementById('formPaidAmt');
-            const remainingAmount = paidInput.value !== '' ? Number(paidInput.value) : (Number(paidInput.dataset.autoVal) || totalAmount);
+            const remainingAmount = paidInput.value !== '' ? parseFloat(parseFloat(paidInput.value).toFixed(2)) : parseFloat(parseFloat(paidInput.dataset.autoVal || totalAmount).toFixed(2));
 
             const monthlyInput = document.getElementById('formMonthly');
-            const monthlyPayment = monthlyInput.value !== '' ? Number(monthlyInput.value) : (Number(monthlyInput.dataset.autoVal) || Math.round(totalAmount / 12));
+            const monthlyPayment = monthlyInput.value !== '' ? parseFloat(parseFloat(monthlyInput.value).toFixed(2)) : parseFloat(parseFloat(monthlyInput.dataset.autoVal || (totalAmount / 12)).toFixed(2));
 
             const overpayInput = document.getElementById('formOverpayment');
-            const overpayment = overpayInput.value !== '' ? Number(overpayInput.value) : (Number(overpayInput.dataset.autoVal) || 0);
+            const overpayment = overpayInput.value !== '' ? parseFloat(parseFloat(overpayInput.value).toFixed(2)) : parseFloat(parseFloat(overpayInput.dataset.autoVal || 0).toFixed(2));
 
             const paymentDay = Number(document.getElementById('formPaymentDay').value);
             const status = document.getElementById('formPaidStatus').value;
@@ -1741,7 +1954,7 @@
 
         function exportBackupToFile() {
             const dataToBackup = {
-                version: "2.5",
+                version: "2.6",
                 currency: currentCurrency,
                 credits: credits,
                 biometrics: {
@@ -1852,7 +2065,7 @@
                     const daysDiff = getDaysDiff(c.paymentDay);
                     if (daysDiff === 2 || daysDiff === 3) {
                         new Notification("Напоминание о списании", {
-                            body: `Кредит: ${c.bank}. Платёж ${formatMoney(c.monthlyPayment)} через ${daysDiff} дня (${c.paymentDay} числа). Не забудьте внести средства!`,
+                            body: `Кредит: ${c.bank}. Платёж ${formatMoney(c.monthlyPayment, true)} через ${daysDiff} дня (${c.paymentDay} числа). Не забудьте внести средства!`,
                             icon: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect width='128' height='128' rx='28' fill='%23ef4444'/><text x='50%25' y='52%25' font-family='sans-serif' font-weight='bold' font-size='64' fill='%23ffffff' text-anchor='middle' dy='.3em'>⚠️</text></svg>"
                         });
                     }
