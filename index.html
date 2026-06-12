@@ -178,6 +178,21 @@
                         Добавьте ваши активные кредиты, чтобы получить персональные финансовые рекомендации по оптимизации выплат.
                     </p>
                 </div>
+
+                <!-- Кредиты, которые почти закрыты -->
+                <div id="closingSoonSection" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-3 hidden">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🏁</span>
+                            <h3 class="font-extrabold text-slate-900 text-sm">Почти закрытые кредиты</h3>
+                        </div>
+                        <span class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full uppercase tracking-wider">≤ 2 транша</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">Кредиты, по которым осталось два или меньше ежемесячных платежей.</p>
+                    <div class="space-y-2.5" id="closingSoonCreditsList">
+                        <!-- Заполняется динамически -->
+                    </div>
+                </div>
             </div>
 
             <!-- ЭКРАН: Кредиты -->
@@ -1466,6 +1481,7 @@
         function renderAll() {
             renderMainCard();
             renderCurrentMonthChecklist();
+            renderClosingSoonCredits();
             renderCreditsTabList();
             renderCalendarPayments();
             renderAnalytics();
@@ -1480,7 +1496,11 @@
 
             credits.forEach(c => {
                 totalRemaining += parseFloat(c.remainingAmount) || 0;
-                totalMonthly += parseFloat(c.monthlyPayment) || 0;
+                // ВАЖНО: блок "Ежемесячные платежи" на главной показывает нагрузку текущего месяца.
+                // Кредиты с первым платежом в будущих месяцах не должны попадать в июнь/текущий месяц.
+                if (isCreditDueInMonth(c) && parseFloat(c.remainingAmount) > 0) {
+                    totalMonthly += parseFloat(c.monthlyPayment) || 0;
+                }
                 totalOverpay += parseFloat(c.overpayment) || 0;
             });
 
@@ -1530,7 +1550,18 @@
             // Сортируем копию кредитов строго по дням месяца (хронологический график от начала к концу месяца)
             const sortedCredits = credits
                 .map((c, originalIndex) => ({ ...c, originalIndex }))
+                // На главной показываем только платежи текущего месяца.
+                // Если первый платеж назначен на будущий месяц, он не должен отображаться в текущем месяце как "Скоро".
+                .filter((item) => isCreditDueInMonth(item))
                 .sort((a, b) => getPaymentDateForMonth(a).getTime() - getPaymentDateForMonth(b).getTime());
+
+            if (sortedCredits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-xs text-slate-400">
+                        В этом месяце платежей нет. Будущие кредиты появятся здесь в месяц первого платежа.
+                    </div>
+                `;
+            }
 
             sortedCredits.forEach((item) => {
                 const c = item;
@@ -1993,6 +2024,62 @@
             
             renderAll();
             openTranchesModal(activeEditCreditIndex);
+        }
+
+        function getTranchesLeft(c) {
+            const remaining = parseFloat(c.remainingAmount) || 0;
+            const monthly = parseFloat(c.monthlyPayment) || 0;
+            if (remaining <= 0 || monthly <= 0) return 0;
+            return Math.ceil(remaining / monthly);
+        }
+
+        function renderClosingSoonCredits() {
+            const section = document.getElementById('closingSoonSection');
+            const list = document.getElementById('closingSoonCreditsList');
+            if (!section || !list) return;
+
+            const closingSoon = credits
+                .map((c, originalIndex) => ({ ...c, originalIndex, tranchesLeft: getTranchesLeft(c) }))
+                .filter(c => c.tranchesLeft > 0 && c.tranchesLeft <= 2)
+                .sort((a, b) => a.tranchesLeft - b.tranchesLeft || (parseFloat(a.remainingAmount) || 0) - (parseFloat(b.remainingAmount) || 0));
+
+            if (closingSoon.length === 0) {
+                section.classList.add('hidden');
+                list.innerHTML = '';
+                return;
+            }
+
+            section.classList.remove('hidden');
+            list.innerHTML = '';
+
+            closingSoon.forEach(c => {
+                const remaining = parseFloat(c.remainingAmount) || 0;
+                const monthly = parseFloat(c.monthlyPayment) || 0;
+                const finalPayment = Math.min(remaining, monthly);
+                const endDateText = calculateEndDate(c.paymentDay, c.tranchesLeft, c.firstPaymentDate);
+                const row = document.createElement('div');
+                row.className = "p-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 flex items-center justify-between gap-3 cursor-pointer hover:bg-emerald-50 transition";
+                row.onclick = () => openTranchesModal(c.originalIndex, event);
+                row.innerHTML = `
+                    <div class="min-w-0">
+                        <h4 class="text-xs font-extrabold text-slate-900 truncate">${c.bank} <span class="text-[10px] font-normal text-slate-500">(${c.type})</span></h4>
+                        <p class="text-[10px] text-slate-500 font-semibold leading-snug">
+                            Осталось: <span class="text-emerald-700 font-extrabold">${c.tranchesLeft} ${getTrancheWord(c.tranchesLeft)}</span> • до ${endDateText}
+                        </p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="block text-xs font-extrabold text-slate-900">${formatMoney(remaining, false)}</span>
+                        <span class="block text-[9px] font-bold text-emerald-700">посл. платёж ${formatMoney(finalPayment, false)}</span>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function getTrancheWord(count) {
+            if (count === 1) return 'транш';
+            if (count >= 2 && count <= 4) return 'транша';
+            return 'траншей';
         }
 
         function renderCreditsTabList() {
