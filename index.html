@@ -20,36 +20,7 @@
     <meta name="theme-color" content="#0f172a">
 
     <!-- Динамическая интеграция Web App Manifest для иконки Android -->
-    <link rel="manifest" id="pwa-manifest">
-    <script>
-        const manifest = {
-            "short_name": "Credit Tracker",
-            "name": "Credit Tracker - Контроль кредитов",
-            "icons": [
-                {
-                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'><rect width='192' height='192' rx='48' fill='%2310b981'/><text x='50%25' y='52%25' font-family='sans-serif' font-weight='bold' font-size='100' fill='%230f172a' text-anchor='middle' dy='.3em'>₽</text></svg>",
-                    "type": "image/svg+xml",
-                    "sizes": "192x192",
-                    "purpose": "any maskable"
-                },
-                {
-                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%2310b981'/><text x='50%25' y='52%25' font-family='sans-serif' font-weight='bold' font-size='260' fill='%230f172a' text-anchor='middle' dy='.3em'>₽</text></svg>",
-                    "type": "image/svg+xml",
-                    "sizes": "512x512",
-                    "purpose": "any maskable"
-                }
-            ],
-            "start_url": ".",
-            "background_color": "#0f172a",
-            "theme_color": "#0f172a",
-            "display": "standalone",
-            "orientation": "portrait"
-        };
-        const stringManifest = JSON.stringify(manifest);
-        const blob = new Blob([stringManifest], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
-    </script>
+    <link rel="manifest" href="manifest.json">
 
     <style>
         html, body {
@@ -141,6 +112,13 @@
                     </div>
                 </div>
 
+                <div id="nextPaymentCard" class="bg-slate-950 rounded-3xl p-5 text-white shadow-lg hidden">
+                    <div class="flex justify-between items-start gap-4">
+                        <div><span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Следующий платёж</span><h3 id="nextPaymentBank" class="text-lg font-extrabold mt-1">—</h3><p id="nextPaymentDate" class="text-xs text-slate-300 mt-1">—</p></div>
+                        <div class="text-right"><strong id="nextPaymentAmount" class="text-lg text-emerald-400">—</strong><p id="nextPaymentCountdown" class="text-[10px] font-bold mt-1">—</p></div>
+                    </div>
+                </div>
+
                 <!-- ЕДИНАЯ СИСТЕМА: Контроль и График Оплат (Объединено без дублирования) -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-4">
@@ -209,10 +187,11 @@
                 </div>
 
                 <!-- Фильтры -->
-                <div class="flex gap-2 bg-slate-200/60 p-1 rounded-xl">
+                <div class="grid grid-cols-4 gap-1 bg-slate-200/60 p-1 rounded-xl">
                     <button onclick="filterCredits('all')" id="filter-all" class="flex-1 text-center py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition">Все</button>
                     <button onclick="filterCredits('active')" id="filter-active" class="flex-1 text-center py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">Активные</button>
-                    <button onclick="filterCredits('paid')" id="filter-paid" class="flex-1 text-center py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">Выплаченные</button>
+                    <button onclick="filterCredits('closed')" id="filter-closed" class="flex-1 text-center py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">Погашенные</button>
+                    <button onclick="filterCredits('archived')" id="filter-archived" class="flex-1 text-center py-2 text-[10px] font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">Архив</button>
                 </div>
 
                 <!-- Контейнер расширенного списка -->
@@ -233,6 +212,11 @@
                             <strong class="font-bold">Внимание!</strong> Оплачивайте ежемесячные платежи за 1-2 дня до даты списания во избежание просрочки со стороны банка.
                         </div>
                     </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-5 text-white shadow-lg">
+                    <div class="flex justify-between"><div><p id="monthlyPlanTitle" class="text-xs font-extrabold uppercase tracking-wider">План на месяц</p><p class="text-[10px] text-indigo-200 mt-1">Активные платежи</p></div><strong id="monthlyPlanCount" class="text-xl">0</strong></div>
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center"><div><span class="text-[9px] text-indigo-200 block">Всего</span><strong id="monthlyPlanTotal" class="text-xs">0 ₽</strong></div><div><span class="text-[9px] text-indigo-200 block">Оплачено</span><strong id="monthlyPlanPaid" class="text-xs text-emerald-300">0 ₽</strong></div><div><span class="text-[9px] text-indigo-200 block">Осталось</span><strong id="monthlyPlanRemaining" class="text-xs text-amber-300">0 ₽</strong></div></div>
                 </div>
 
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
@@ -584,6 +568,9 @@
             </div>
 
             <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                <button onclick="openPaymentHistory(activeEditCreditIndex, event)" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs transition border border-indigo-100">
+                    📜 История платежей
+                </button>
                 <!-- Досрочное погашение -->
                 <button id="trancheDetailEarlyRepayBtn" onclick="openEarlyRepayment(activeEditCreditIndex, event)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-sm">
                     🚀 Досрочное погашение
@@ -592,6 +579,37 @@
                     Закрыть график
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: Оплата текущего месяца -->
+    <div id="paymentActionModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center z-[105] p-4 hidden">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 text-slate-800 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <div><h4 class="font-extrabold text-slate-900 text-sm">Внести платёж</h4><p id="paymentActionSubtitle" class="text-[10px] text-slate-400 mt-1"></p></div>
+                <button onclick="closePaymentActionModal()" class="text-slate-400 text-xl">×</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="submitMonthlyPayment('full')" class="py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs">Полная оплата</button>
+                <button onclick="focusManualPayment()" class="py-3 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-100">Частичная</button>
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-600">Ручная сумма</label>
+                <input id="manualPaymentAmount" type="number" min="0.01" step="0.01" class="w-full bg-slate-100 rounded-xl p-3 border border-slate-200 font-bold" placeholder="0.00">
+                <input id="manualPaymentComment" type="text" maxlength="200" class="w-full bg-slate-100 rounded-xl p-3 border border-slate-200 text-xs" placeholder="Комментарий (необязательно)">
+                <button onclick="submitMonthlyPayment('manual')" class="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs">Внести сумму</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: История платежей -->
+    <div id="paymentHistoryModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center z-[106] p-4 hidden">
+        <div class="bg-white rounded-3xl w-full max-w-md p-6 text-slate-800 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div><h4 class="font-extrabold text-slate-900 text-sm">История платежей</h4><p id="paymentHistorySubtitle" class="text-[10px] text-slate-400 mt-1"></p></div>
+                <button onclick="closePaymentHistory()" class="text-slate-400 text-xl">×</button>
+            </div>
+            <div id="paymentHistoryList" class="overflow-y-auto no-scrollbar space-y-3"></div>
         </div>
     </div>
 
@@ -630,6 +648,9 @@
                             <span class="text-[8px] text-slate-400 text-center">Срок не изменится</span>
                         </label>
                     </div>
+                </div>
+                <div id="earlyRepayPreview" class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[10px] leading-relaxed text-slate-600">
+                    Введите сумму, чтобы увидеть прогноз.
                 </div>
             </div>
 
@@ -719,10 +740,10 @@
                         <p class="text-[9px] text-slate-400 mt-1">Если указана дата первого платежа, день возьмётся из неё.</p>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Статус текущего месяца</label>
+                        <label class="block font-bold text-slate-700 mb-1">Статус кредита</label>
                         <select id="formPaidStatus" class="w-full bg-slate-100 rounded-xl p-2.5 border border-slate-200 outline-none">
-                            <option value="unpaid">Ожидает оплаты</option>
-                            <option value="paid">Оплачен</option>
+                            <option value="active">Активен</option>
+                            <option value="closed">Погашен</option>
                         </select>
                     </div>
                 </div>
@@ -766,7 +787,7 @@
                 monthlyPayment: 25000.00,
                 overpayment: 190000.00,
                 paymentDay: 15,
-                status: 'unpaid'
+                status: 'active'
             },
             {
                 bank: 'Т-Банк',
@@ -776,7 +797,7 @@
                 monthlyPayment: 12000.00,
                 overpayment: 60000.00,
                 paymentDay: 22,
-                status: 'unpaid'
+                status: 'active'
             },
             {
                 bank: 'ВТБ',
@@ -786,7 +807,7 @@
                 monthlyPayment: 22000.00,
                 overpayment: 160000.00,
                 paymentDay: 5,
-                status: 'paid'
+                status: 'active'
             }
         ];
 
@@ -803,6 +824,8 @@
         let activeEditCreditIndex = -1;
         let activeEditTrancheStep = -1;
         let activeEditIsLast = false;
+        let activePaymentCreditIndex = -1;
+        let activeHistoryCreditIndex = -1;
 
         window.onload = function() {
             // Загрузка валюты
@@ -814,12 +837,17 @@
 
             // Загрузка кредитов
             const savedCredits = localStorage.getItem('user_credits');
+            let rawCredits = defaultCredits;
             if (savedCredits) {
-                credits = JSON.parse(savedCredits);
-            } else {
-                credits = [...defaultCredits];
-                localStorage.setItem('user_credits', JSON.stringify(credits));
+                try {
+                    const parsed = JSON.parse(savedCredits);
+                    rawCredits = Array.isArray(parsed) ? parsed : defaultCredits;
+                } catch (error) {
+                    rawCredits = defaultCredits;
+                }
             }
+            credits = rawCredits.map(migrateCredit);
+            saveCredits();
 
             // Инициализация симуляции времени
             updateStatusBarTime();
@@ -856,6 +884,10 @@
 
             // Автоматическое напоминание при запуске
             checkUpcomingDeadlinesAndNotify();
+
+            if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+                navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('Service Worker:', error));
+            }
         }
 
         // Вспомогательные функции для замены браузерных алертов и подтверждений
@@ -904,8 +936,39 @@
             renderAll();
         }
 
+        function hasStoredPin() {
+            return Boolean(localStorage.getItem('pinHash') || localStorage.getItem('app_pin_code'));
+        }
+
+        async function hashPin(pin, salt) {
+            const bytes = new TextEncoder().encode(`${salt}:${pin}`);
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function storePinSecurely(pin) {
+            const saltBytes = new Uint8Array(16);
+            crypto.getRandomValues(saltBytes);
+            const salt = [...saltBytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+            localStorage.setItem('pinSalt', salt);
+            localStorage.setItem('pinHash', await hashPin(pin, salt));
+            localStorage.removeItem('app_pin_code');
+        }
+
+        async function verifyPin(pin) {
+            const hash = localStorage.getItem('pinHash');
+            const salt = localStorage.getItem('pinSalt');
+            if (hash && salt) return (await hashPin(pin, salt)) === hash;
+            const legacyPin = localStorage.getItem('app_pin_code');
+            if (legacyPin && pin === legacyPin) {
+                await storePinSecurely(pin);
+                return true;
+            }
+            return false;
+        }
+
         function initializeSecurityCheck() {
-            const hasPin = localStorage.getItem('app_pin_code');
+            const hasPin = hasStoredPin();
             const pinEnabled = localStorage.getItem('app_pin_enabled') !== 'false'; 
 
             if (hasPin && pinEnabled) {
@@ -961,14 +1024,13 @@
             }
         }
 
-        function handlePinSubmit() {
+        async function handlePinSubmit() {
             const entered = currentPinDraft;
             currentPinDraft = '';
             drawPinDots(0);
 
             if (pinCodeState === 'locked') {
-                const actualPin = localStorage.getItem('app_pin_code');
-                if (entered === actualPin) {
+                if (await verifyPin(entered)) {
                     document.getElementById('appLockScreen').classList.add('hidden');
                     showToast("Вход выполнен успешно!");
                 } else {
@@ -982,7 +1044,7 @@
                 showToast("Введите код повторно для подтверждения");
             } else if (pinCodeState === 'set_confirm') {
                 if (entered === temporaryPinStorage) {
-                    localStorage.setItem('app_pin_code', entered);
+                    await storePinSecurely(entered);
                     localStorage.setItem('app_pin_enabled', 'true');
                     pinCodeState = 'disabled'; 
                     document.getElementById('appLockScreen').classList.add('hidden');
@@ -1011,11 +1073,13 @@
                 "Вы забыли PIN-код? Сброс удалит все введенные кредиты и вернет демонстрационную базу данных ради безопасности. Продолжить?", 
                 () => {
                     localStorage.removeItem('app_pin_code');
+                    localStorage.removeItem('pinHash');
+                    localStorage.removeItem('pinSalt');
                     localStorage.removeItem('app_pin_enabled');
                     localStorage.removeItem('biometric_enabled');
                     localStorage.removeItem('biometric_credential_id');
-                    credits = JSON.parse(JSON.stringify(defaultCredits));
-                    localStorage.setItem('user_credits', JSON.stringify(credits));
+                    credits = JSON.parse(JSON.stringify(defaultCredits)).map(migrateCredit);
+                    saveCredits();
                     initializeSecurityCheck();
                     renderAll();
                     showToast("Данные сброшены до исходных демо-настроек.");
@@ -1024,7 +1088,7 @@
         }
 
         async function setupBiometricAuth() {
-            const hasPin = localStorage.getItem('app_pin_code');
+            const hasPin = hasStoredPin();
             if (!hasPin) {
                 showToast("Сначала настройте стандартный PIN-код!");
                 return;
@@ -1143,7 +1207,7 @@
             const container = document.getElementById('pinStatusContainer');
             const actionButtons = document.getElementById('pinActionButtons');
 
-            if (localStorage.getItem('app_pin_code')) {
+            if (hasStoredPin()) {
                 actionButtons.classList.remove('hidden');
                 if (pinEnabled) {
                     container.innerHTML = `
@@ -1227,21 +1291,73 @@
         }
 
         function resetToDemo() {
-            credits = JSON.parse(JSON.stringify(defaultCredits));
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            credits = JSON.parse(JSON.stringify(defaultCredits)).map(migrateCredit);
+            saveCredits();
             renderAll();
             showToast('Данные сброшены до исходных!');
         }
 
         function filterCredits(filterType) {
             currentFilter = filterType;
-            ['all', 'active', 'paid'].forEach(type => {
+            ['all', 'active', 'closed', 'archived'].forEach(type => {
                 const btn = document.getElementById(`filter-${type}`);
                 btn.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition";
             });
             const activeBtn = document.getElementById(`filter-${filterType}`);
             activeBtn.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition";
             renderCreditsTabList();
+        }
+
+        // =======================
+        // STORAGE / CREDIT MODEL
+        // =======================
+        function createId() {
+            return crypto.randomUUID ? crypto.randomUUID() : `credit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function getMonthKey(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function isCreditPaidForMonth(credit, monthKey = getMonthKey()) {
+            return Boolean(credit.payments && credit.payments[monthKey] && credit.payments[monthKey].paid === true);
+        }
+
+        function isCreditClosed(credit) {
+            return credit.status === 'closed' || Number(credit.remainingAmount) <= 0;
+        }
+
+        function isCreditActive(credit) {
+            return credit.status === 'active' && Number(credit.remainingAmount) > 0;
+        }
+
+        function migrateCredit(rawCredit = {}) {
+            const now = new Date().toISOString();
+            const remaining = Math.max(0, Number(rawCredit.remainingAmount) || 0);
+            const archived = rawCredit.status === 'archived';
+            const status = archived ? 'archived' : (remaining <= 0 ? 'closed' : 'active');
+            return {
+                ...rawCredit,
+                id: rawCredit.id || createId(),
+                bank: rawCredit.bank || 'Другой банк',
+                type: rawCredit.type || '',
+                totalAmount: Number(rawCredit.totalAmount) || 0,
+                remainingAmount: remaining,
+                monthlyPayment: Number(rawCredit.monthlyPayment) || 0,
+                overpayment: Number(rawCredit.overpayment) || 0,
+                paymentDay: Math.min(31, Math.max(1, Number(rawCredit.paymentDay) || 1)),
+                firstPaymentDate: rawCredit.firstPaymentDate || '',
+                status,
+                createdAt: rawCredit.createdAt || now,
+                updatedAt: rawCredit.updatedAt || now,
+                closedAt: status === 'closed' ? (rawCredit.closedAt || now) : null,
+                payments: rawCredit.payments && typeof rawCredit.payments === 'object' ? rawCredit.payments : {},
+                earlyRepayments: Array.isArray(rawCredit.earlyRepayments) ? rawCredit.earlyRepayments : []
+            };
+        }
+
+        function saveCredits() {
+            localStorage.setItem('user_credits', JSON.stringify(credits));
         }
 
         // Форматирование сумм (целые числа для Главной и детальные копейки для графиков)
@@ -1256,8 +1372,8 @@
         function getPaymentDateThisMonth(day) {
             const today = new Date();
             const year = today.getFullYear();
-            const month = today.getMonth(); 
-            return new Date(year, month, day);
+            const month = today.getMonth();
+            return makePaymentDate(year, month, day);
         }
 
         function getDaysDiff(day) {
@@ -1480,13 +1596,61 @@
 
         function renderAll() {
             renderMainCard();
+            renderNextPayment();
             renderCurrentMonthChecklist();
             renderClosingSoonCredits();
             renderCreditsTabList();
             renderCalendarPayments();
+            renderMonthlyPlan();
             renderAnalytics();
             updatePinSettingsUI();
             updateBiometricSettingsUI();
+        }
+
+        function renderNextPayment() {
+            const card = document.getElementById('nextPaymentCard');
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const candidates = [];
+            credits.filter(isCreditActive).forEach((credit, index) => {
+                for (let offset = 0; offset < 24; offset++) {
+                    const month = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+                    if (!isCreditDueInMonth(credit, month)) continue;
+                    const key = getMonthKey(month);
+                    if (offset === 0 && isCreditPaidForMonth(credit, key)) continue;
+                    candidates.push({ credit, index, date: getPaymentDateForMonth(credit, month), key });
+                    break;
+                }
+            });
+            candidates.sort((a, b) => a.date - b.date);
+            const next = candidates[0];
+            if (!next) { card.classList.add('hidden'); return; }
+            const record = next.credit.payments[next.key];
+            const required = Number(record?.requiredAmount) || Math.min(Number(next.credit.monthlyPayment), Number(next.credit.remainingAmount) + (Number(record?.amount) || 0));
+            const left = Math.max(0, required - (Number(record?.amount) || 0));
+            const days = Math.ceil((next.date - today) / 86400000);
+            document.getElementById('nextPaymentBank').innerText = next.credit.bank;
+            document.getElementById('nextPaymentDate').innerText = formatDateRU(next.date);
+            document.getElementById('nextPaymentAmount').innerText = formatMoney(left, true);
+            document.getElementById('nextPaymentCountdown').innerText = days < 0 ? `Просрочено на ${Math.abs(days)} дн.` : days === 0 ? 'Сегодня' : `Осталось ${days} дн.`;
+            document.getElementById('nextPaymentCountdown').className = `text-[10px] font-bold mt-1 ${days < 0 ? 'text-rose-400' : days <= 3 ? 'text-amber-300' : 'text-slate-300'}`;
+            card.classList.remove('hidden');
+        }
+
+        function renderMonthlyPlan() {
+            const now = new Date();
+            const due = credits.filter(c => isCreditActive(c) && isCreditDueInMonth(c, now));
+            let total = 0, paid = 0;
+            due.forEach(c => {
+                const record = c.payments[getMonthKey(now)];
+                const required = Number(record?.requiredAmount) || Math.min(Number(c.monthlyPayment) || 0, Number(c.remainingAmount) + (Number(record?.amount) || 0));
+                total += required;
+                paid += Math.min(required, Number(record?.amount) || 0);
+            });
+            document.getElementById('monthlyPlanTitle').innerText = now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+            document.getElementById('monthlyPlanCount').innerText = due.length;
+            document.getElementById('monthlyPlanTotal').innerText = formatMoney(total, false);
+            document.getElementById('monthlyPlanPaid').innerText = formatMoney(paid, false);
+            document.getElementById('monthlyPlanRemaining').innerText = formatMoney(Math.max(0, total - paid), false);
         }
 
         function renderMainCard() {
@@ -1498,7 +1662,7 @@
                 totalRemaining += parseFloat(c.remainingAmount) || 0;
                 // ВАЖНО: блок "Ежемесячные платежи" на главной показывает нагрузку текущего месяца.
                 // Кредиты с первым платежом в будущих месяцах не должны попадать в июнь/текущий месяц.
-                if (isCreditDueInMonth(c) && parseFloat(c.remainingAmount) > 0) {
+                if (isCreditActive(c) && isCreditDueInMonth(c)) {
                     totalMonthly += parseFloat(c.monthlyPayment) || 0;
                 }
                 totalOverpay += parseFloat(c.overpayment) || 0;
@@ -1537,7 +1701,7 @@
             let nearestUnpaidIndex = -1;
             let minDays = Infinity;
             credits.forEach((c, i) => {
-                const isUnpaid = c.status === 'unpaid' && parseFloat(c.remainingAmount) > 0 && isCreditDueInMonth(c);
+                const isUnpaid = isCreditActive(c) && isCreditDueInMonth(c) && !isCreditPaidForMonth(c);
                 if (isUnpaid) {
                     const d = getDaysDiffForCredit(c);
                     if (d < minDays) {
@@ -1552,8 +1716,18 @@
                 .map((c, originalIndex) => ({ ...c, originalIndex }))
                 // На главной показываем только платежи текущего месяца.
                 // Если первый платеж назначен на будущий месяц, он не должен отображаться в текущем месяце как "Скоро".
-                .filter((item) => isCreditDueInMonth(item))
-                .sort((a, b) => getPaymentDateForMonth(a).getTime() - getPaymentDateForMonth(b).getTime());
+                .filter((item) => isCreditActive(item) && isCreditDueInMonth(item))
+                .sort((a, b) => {
+                    const rank = (credit) => {
+                        if (isCreditPaidForMonth(credit)) return 4;
+                        const days = getDaysDiffForCredit(credit);
+                        if (days < 0) return 0;
+                        if (days === 0) return 1;
+                        if (days <= 3) return 2;
+                        return 3;
+                    };
+                    return rank(a) - rank(b) || getPaymentDateForMonth(a) - getPaymentDateForMonth(b);
+                });
 
             if (sortedCredits.length === 0) {
                 container.innerHTML = `
@@ -1567,8 +1741,10 @@
                 const c = item;
                 const index = item.originalIndex;
                 const isDueThisMonth = isCreditDueInMonth(c);
-                const isPaid = isDueThisMonth && (c.status === 'paid' || parseFloat(c.remainingAmount) === 0);
-                if (isDueThisMonth && (parseFloat(c.remainingAmount) > 0 || c.status === 'paid')) totalCount++;
+                const isPaid = isDueThisMonth && isCreditPaidForMonth(c);
+                const paymentRecord = c.payments[getMonthKey()];
+                const isPartial = Boolean(paymentRecord?.partial && !paymentRecord?.paid);
+                if (isDueThisMonth && isCreditActive(c)) totalCount++;
                 if (isPaid) paidCount++;
 
                 const daysDiff = getDaysDiffForCredit(c);
@@ -1591,7 +1767,8 @@
                 checklistRow.onclick = () => togglePaymentStatus(index);
 
                 // Округление платежа для главной страницы
-                const roundedMonthlyPayment = formatMoney(c.monthlyPayment, false);
+                const roundedMonthlyPayment = formatMoney(paymentRecord?.amount || Math.min(c.monthlyPayment, c.remainingAmount), false);
+                const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(c.remainingAmount / c.monthlyPayment) : 0;
 
                 checklistRow.innerHTML = `
                     <div class="flex items-center gap-3 overflow-hidden">
@@ -1620,7 +1797,8 @@
                                   ? 'text-red-600 font-extrabold text-sm' 
                                   : 'font-bold'
                             }">
-                                ${c.bank} ${isNearest ? '🚨' : ''} <span class="text-[10px] font-normal text-slate-500">(${c.type})</span>
+                                ${escapeHTML(c.bank)} ${isNearest ? '🚨' : ''} <span class="text-[10px] font-normal text-slate-500">(${escapeHTML(c.type)})</span>
+                                ${tranchesLeft === 1 ? '<span class="ml-1 text-[9px] text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full">Последний транш 🎉</span>' : tranchesLeft === 2 ? '<span class="ml-1 text-[9px] text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">Почти закрыт</span>' : ''}
                             </h4>
                             <!-- Дата дедлайна прямо под названием -->
                             <p class="text-[10px] ${
@@ -1642,8 +1820,8 @@
                         <span class="font-extrabold block text-xs ${isPaid ? 'line-through opacity-50' : !isDueThisMonth ? 'text-slate-500' : isNearest ? 'text-red-600 font-black text-sm' : 'text-slate-900'}">
                             ${roundedMonthlyPayment}
                         </span>
-                        <span class="text-[9px] font-bold block ${isPaid ? 'text-emerald-600' : isNearest ? 'text-red-500' : 'text-slate-400'}">
-                            ${isPaid ? 'Оплачено' : !isDueThisMonth ? 'Скоро' : 'К оплате'}
+                        <span class="text-[9px] font-bold block ${isPaid ? 'text-emerald-600' : isPartial ? 'text-amber-600' : isNearest ? 'text-red-500' : 'text-slate-400'}">
+                            ${isPaid ? 'Оплачено' : isPartial ? `Частично: ${formatMoney(paymentRecord.amount)} из ${formatMoney(paymentRecord.requiredAmount)}` : !isDueThisMonth ? 'Скоро' : 'К оплате'}
                         </span>
                     </div>
                 `;
@@ -1669,7 +1847,7 @@
             if (nearestIdx !== -1) {
                 const nearest = credits[nearestIdx];
                 const days = getDaysDiff(nearest.paymentDay);
-                let message = `Ваша главная цель сейчас — <strong>${nearest.bank} (${nearest.type})</strong>. `;
+                let message = `Ваша главная цель сейчас — <strong>${escapeHTML(nearest.bank)} (${escapeHTML(nearest.type)})</strong>. `;
                 if (days < 0) {
                     message += `Платеж <strong class="text-rose-600">просрочен на ${Math.abs(days)} дн!</strong> Рекомендуем внести ${formatMoney(nearest.monthlyPayment, false)} как можно скорее для предотвращения штрафов.`;
                 } else if (days === 0) {
@@ -1691,10 +1869,10 @@
                 adviceEl.innerHTML = message;
             } else {
                 const futureCredit = credits
-                    .filter(c => parseFloat(c.remainingAmount) > 0 && !isCreditDueInMonth(c) && getFirstPaymentDate(c))
+                    .filter(c => isCreditActive(c) && !isCreditDueInMonth(c) && getFirstPaymentDate(c))
                     .sort((a, b) => getFirstPaymentDate(a) - getFirstPaymentDate(b))[0];
                 if (futureCredit) {
-                    adviceEl.innerHTML = `Ближайших платежей в этом месяце нет. Первый будущий платёж: <strong>${futureCredit.bank} (${futureCredit.type})</strong> — ${formatDateRU(getFirstPaymentDate(futureCredit))}.`;
+                    adviceEl.innerHTML = `Ближайших платежей в этом месяце нет. Первый будущий платёж: <strong>${escapeHTML(futureCredit.bank)} (${escapeHTML(futureCredit.type)})</strong> — ${formatDateRU(getFirstPaymentDate(futureCredit))}.`;
                 } else {
                     adviceEl.innerHTML = "Добавьте ваши активные кредиты, чтобы получить персональные финансовые рекомендации по оптимизации выплат.";
                 }
@@ -1704,8 +1882,10 @@
         // Клик по чекбоксу на главной: предотвращение случайных нажатий
         function togglePaymentStatus(index) {
             const c = credits[index];
-            if (parseFloat(c.remainingAmount) === 0) {
-                showToast(`Кредит "${c.bank}" уже полностью выплачен!`);
+            const monthKey = getMonthKey();
+            const hasCurrentPayment = Boolean(c.payments && c.payments[monthKey]);
+            if (!isCreditActive(c) && !hasCurrentPayment) {
+                showToast(`Кредит "${c.bank}" уже полностью погашен!`);
                 return;
             }
 
@@ -1714,14 +1894,8 @@
                 return;
             }
 
-            if (c.status === 'unpaid') {
-                showCustomConfirm(
-                    "Подтвердить внесение платежа?",
-                    `Вы действительно хотите внести ежемесячный платёж по кредиту "${c.bank}" (${c.type}) в размере ${formatMoney(c.monthlyPayment, true)}? Сумма остатка долга будет автоматически уменьшена.`,
-                    () => {
-                        executePayment(index);
-                    }
-                );
+            if (!isCreditPaidForMonth(c, monthKey)) {
+                openPaymentActionModal(index);
             } else {
                 showCustomConfirm(
                     "Отменить платёж?",
@@ -1733,41 +1907,208 @@
             }
         }
 
-        function executePayment(index) {
+        function openPaymentActionModal(index) {
             const c = credits[index];
-            c.status = 'paid';
-            
-            const currentDue = parseFloat(c.monthlyPayment) || 0;
-            const nextRemaining = Math.max(0, parseFloat((c.remainingAmount - currentDue).toFixed(2)));
-            
-            // Сохраняем фактически списанную сумму, чтобы при отмене восстановить точно
-            c.lastPaidAmount = parseFloat((c.remainingAmount - nextRemaining).toFixed(2));
-            c.remainingAmount = nextRemaining;
+            const existing = c.payments[getMonthKey()];
+            const alreadyPaid = Number(existing?.amount) || 0;
+            const required = Number(existing?.requiredAmount) || Math.min(Number(c.monthlyPayment) || 0, Number(c.remainingAmount) + alreadyPaid);
+            activePaymentCreditIndex = index;
+            document.getElementById('paymentActionSubtitle').innerText = `${c.bank}: ${formatMoney(alreadyPaid, true)} из ${formatMoney(required, true)}`;
+            document.getElementById('manualPaymentAmount').value = '';
+            document.getElementById('manualPaymentAmount').max = String(c.remainingAmount);
+            document.getElementById('manualPaymentComment').value = existing?.comment || '';
+            document.getElementById('paymentActionModal').classList.remove('hidden');
+        }
 
-            showToast(`Платёж по кредиту "${c.bank}" выполнен успешно!`);
+        function closePaymentActionModal() {
+            document.getElementById('paymentActionModal').classList.add('hidden');
+            activePaymentCreditIndex = -1;
+        }
+
+        function focusManualPayment() {
+            document.getElementById('manualPaymentAmount').focus();
+        }
+
+        function submitMonthlyPayment(mode) {
+            if (activePaymentCreditIndex < 0) return;
+            const c = credits[activePaymentCreditIndex];
+            const existing = c.payments[getMonthKey()];
+            const alreadyPaid = Number(existing?.amount) || 0;
+            const required = Number(existing?.requiredAmount) || Math.min(Number(c.monthlyPayment) || 0, Number(c.remainingAmount) + alreadyPaid);
+            const amount = mode === 'full'
+                ? Math.min(Math.max(0, required - alreadyPaid), Number(c.remainingAmount) || 0)
+                : Number(document.getElementById('manualPaymentAmount').value);
+            if (!Number.isFinite(amount) || amount <= 0 || amount > Number(c.remainingAmount)) {
+                showCustomAlert("Неверная сумма", `Введите сумму от 0,01 до ${formatMoney(c.remainingAmount, true)}.`);
+                return;
+            }
+            executePayment(activePaymentCreditIndex, amount, document.getElementById('manualPaymentComment').value.trim(), required);
+            closePaymentActionModal();
+        }
+
+        function executePayment(index, requestedAmount = null, comment = '', requiredAmount = null) {
+            const c = credits[index];
+            const monthKey = getMonthKey();
+            if (!isCreditActive(c) || !isCreditDueInMonth(c) || isCreditPaidForMonth(c, monthKey)) return;
+
+            const existing = c.payments[monthKey];
+            const previousAmount = Number(existing?.amount) || 0;
+            const required = Number(requiredAmount) || Number(existing?.requiredAmount) || Math.min(Number(c.monthlyPayment) || 0, Number(c.remainingAmount) + previousAmount);
+            const actualPaidAmount = Math.min(requestedAmount == null ? required - previousAmount : Number(requestedAmount), Number(c.remainingAmount) || 0);
+            const totalPaidForMonth = Number((previousAmount + actualPaidAmount).toFixed(2));
+            const fullyPaid = totalPaidForMonth >= required || Number(c.remainingAmount - actualPaidAmount) <= 0;
+            c.remainingAmount = Math.max(0, Number((c.remainingAmount - actualPaidAmount).toFixed(2)));
+            c.payments[monthKey] = {
+                paid: fullyPaid,
+                partial: !fullyPaid,
+                amount: totalPaidForMonth,
+                requiredAmount: required,
+                paidAt: new Date().toISOString(),
+                comment: comment || existing?.comment || '',
+                type: fullyPaid ? 'regular' : 'partial'
+            };
+            c.updatedAt = new Date().toISOString();
+
+            showToast(fullyPaid ? `Платёж по кредиту "${c.bank}" выполнен!` : `Частично оплачено ${formatMoney(totalPaidForMonth, true)} из ${formatMoney(required, true)}.`);
 
             // Салют при полном закрытии!
             if (c.remainingAmount === 0) {
+                c.status = 'closed';
+                c.closedAt = new Date().toISOString();
                 setTimeout(() => {
                     triggerConfetti();
                     showToast(`🎉 Поздравляем! Кредит "${c.bank}" полностью погашен!`);
                 }, 300);
             }
 
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            saveCredits();
             renderAll();
         }
 
         function cancelPayment(index) {
             const c = credits[index];
-            c.status = 'unpaid';
-            const restoredAmt = c.lastPaidAmount ? parseFloat(c.lastPaidAmount) : parseFloat(c.monthlyPayment);
-            c.remainingAmount = parseFloat((parseFloat(c.remainingAmount) + restoredAmt).toFixed(2));
-            delete c.lastPaidAmount;
+            const monthKey = getMonthKey();
+            const payment = c.payments && c.payments[monthKey];
+            if (!payment) return;
+            c.remainingAmount = Number((Number(c.remainingAmount) + (Number(payment.amount) || 0)).toFixed(2));
+            delete c.payments[monthKey];
+            if (c.status === 'closed') {
+                c.status = 'active';
+                c.closedAt = null;
+            }
+            c.updatedAt = new Date().toISOString();
             
             showToast(`Оплата отменена для "${c.bank}"`);
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            saveCredits();
             renderAll();
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+        }
+
+        function getPaymentHistoryMonthKeys(credit) {
+            const storedKeys = Object.keys(credit.payments || {}).filter(key => /^\d{4}-\d{2}$/.test(key));
+            const first = getFirstPaymentDate(credit);
+            const firstStored = storedKeys.length ? new Date(`${storedKeys.sort()[0]}-01T00:00:00`) : null;
+            let cursor = first || firstStored || new Date();
+            cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+            const endSource = credit.closedAt ? new Date(credit.closedAt) : new Date();
+            const end = new Date(endSource.getFullYear(), endSource.getMonth(), 1);
+            const keys = new Set(storedKeys);
+            let guard = 0;
+            while (cursor <= end && guard++ < 600) {
+                keys.add(getMonthKey(cursor));
+                cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+            }
+            return [...keys].sort().reverse();
+        }
+
+        function formatMonthKey(monthKey) {
+            const [year, month] = monthKey.split('-').map(Number);
+            const value = new Date(year, month - 1, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+            return value.charAt(0).toUpperCase() + value.slice(1);
+        }
+
+        function openPaymentHistory(index, event) {
+            if (event) event.stopPropagation();
+            activeHistoryCreditIndex = index;
+            const c = credits[index];
+            document.getElementById('paymentHistorySubtitle').innerText = `${c.bank} • ${c.type}`;
+            renderPaymentHistory();
+            document.getElementById('paymentHistoryModal').classList.remove('hidden');
+        }
+
+        function closePaymentHistory() {
+            document.getElementById('paymentHistoryModal').classList.add('hidden');
+            activeHistoryCreditIndex = -1;
+        }
+
+        function renderPaymentHistory() {
+            if (activeHistoryCreditIndex < 0) return;
+            const c = credits[activeHistoryCreditIndex];
+            const container = document.getElementById('paymentHistoryList');
+            container.innerHTML = '';
+            getPaymentHistoryMonthKeys(c).forEach(monthKey => {
+                const payment = c.payments[monthKey];
+                const row = document.createElement('div');
+                row.className = `rounded-2xl border p-4 space-y-3 ${payment?.paid ? 'bg-emerald-50 border-emerald-100' : payment?.partial ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`;
+                if (!payment) {
+                    row.innerHTML = `<div class="flex justify-between gap-2"><strong class="text-xs">${formatMonthKey(monthKey)}</strong><span class="text-[10px] font-bold text-slate-400">Не оплачено</span></div>`;
+                } else {
+                    const parsedPaidAt = payment.paidAt ? new Date(payment.paidAt) : null;
+                    const paidDate = parsedPaidAt && !Number.isNaN(parsedPaidAt.getTime()) ? parsedPaidAt.toISOString().slice(0, 10) : '';
+                    row.innerHTML = `
+                        <div class="flex justify-between gap-2"><strong class="text-xs">${formatMonthKey(monthKey)}</strong><span class="text-[10px] font-bold ${payment.paid ? 'text-emerald-700' : 'text-amber-700'}">${payment.paid ? 'Оплачено' : 'Оплачено частично'}</span></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="history-amount-${monthKey}" type="number" min="0.01" step="0.01" value="${Number(payment.amount) || 0}" class="bg-white rounded-xl p-2 border border-slate-200 text-xs font-bold">
+                            <input id="history-date-${monthKey}" type="date" value="${paidDate}" class="bg-white rounded-xl p-2 border border-slate-200 text-xs">
+                        </div>
+                        <input id="history-comment-${monthKey}" maxlength="200" value="${escapeHTML(payment.comment)}" class="w-full bg-white rounded-xl p-2 border border-slate-200 text-xs" placeholder="Комментарий">
+                        <div class="flex gap-2"><button onclick="savePaymentHistoryEntry('${monthKey}')" class="flex-1 py-2 rounded-xl bg-indigo-600 text-white text-[10px] font-bold">Сохранить</button><button onclick="deletePaymentHistoryEntry('${monthKey}')" class="px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-[10px] font-bold">Удалить</button></div>`;
+                }
+                container.appendChild(row);
+            });
+        }
+
+        function savePaymentHistoryEntry(monthKey) {
+            const c = credits[activeHistoryCreditIndex];
+            const payment = c?.payments?.[monthKey];
+            if (!payment) return;
+            const newAmount = Number(document.getElementById(`history-amount-${monthKey}`).value);
+            const oldAmount = Number(payment.amount) || 0;
+            const maxAmount = oldAmount + Number(c.remainingAmount);
+            if (!Number.isFinite(newAmount) || newAmount <= 0 || newAmount > maxAmount) {
+                showCustomAlert("Неверная сумма", `Максимальная сумма: ${formatMoney(maxAmount, true)}.`);
+                return;
+            }
+            c.remainingAmount = Number((Number(c.remainingAmount) - (newAmount - oldAmount)).toFixed(2));
+            payment.amount = newAmount;
+            payment.requiredAmount = Number(payment.requiredAmount) || Number(c.monthlyPayment) || newAmount;
+            payment.paid = newAmount >= payment.requiredAmount || c.remainingAmount === 0;
+            payment.partial = !payment.paid;
+            payment.type = payment.paid ? 'regular' : 'partial';
+            const dateValue = document.getElementById(`history-date-${monthKey}`).value;
+            if (dateValue) payment.paidAt = new Date(`${dateValue}T12:00:00`).toISOString();
+            payment.comment = document.getElementById(`history-comment-${monthKey}`).value.trim();
+            c.status = c.remainingAmount <= 0 ? 'closed' : 'active';
+            c.closedAt = c.status === 'closed' ? (c.closedAt || new Date().toISOString()) : null;
+            c.updatedAt = new Date().toISOString();
+            saveCredits(); renderAll(); renderPaymentHistory();
+            showToast('Запись платежа обновлена.');
+        }
+
+        function deletePaymentHistoryEntry(monthKey) {
+            const c = credits[activeHistoryCreditIndex];
+            const payment = c?.payments?.[monthKey];
+            if (!payment) return;
+            showCustomConfirm("Удалить оплату?", `Сумма ${formatMoney(payment.amount, true)} вернётся в остаток долга.`, () => {
+                c.remainingAmount = Number((Number(c.remainingAmount) + Number(payment.amount || 0)).toFixed(2));
+                delete c.payments[monthKey];
+                c.status = 'active'; c.closedAt = null; c.updatedAt = new Date().toISOString();
+                saveCredits(); renderAll(); renderPaymentHistory();
+                showToast('Оплата удалена из истории.');
+            });
         }
 
         function openTranchesModal(index, event) {
@@ -1902,12 +2243,33 @@
             document.getElementById('earlyRepayBankName').innerText = c.bank;
             document.getElementById('earlyRepayCurrentRemaining').innerText = formatMoney(c.remainingAmount, true);
             document.getElementById('earlyRepayAmount').value = '';
+            updateEarlyRepaymentPreview();
             
             document.getElementById('earlyRepaymentModal').classList.remove('hidden');
         }
 
         function closeEarlyRepaymentModal() {
             document.getElementById('earlyRepaymentModal').classList.add('hidden');
+        }
+
+        function updateEarlyRepaymentPreview() {
+            const preview = document.getElementById('earlyRepayPreview');
+            const c = credits[activeEditCreditIndex];
+            if (!preview || !c) return;
+            const entered = Number(document.getElementById('earlyRepayAmount').value);
+            if (!Number.isFinite(entered) || entered <= 0) {
+                preview.innerText = 'Введите сумму, чтобы увидеть прогноз.';
+                return;
+            }
+            const amount = Math.min(entered, Number(c.remainingAmount));
+            const oldRemaining = Number(c.remainingAmount);
+            const oldPayment = Number(c.monthlyPayment);
+            const oldTerm = oldPayment > 0 ? Math.ceil(oldRemaining / oldPayment) : 0;
+            const newRemaining = Math.max(0, oldRemaining - amount);
+            const mode = document.querySelector('input[name="earlyRepayType"]:checked')?.value || 'reduce_term';
+            const newPayment = mode === 'reduce_payment' && oldTerm > 0 ? newRemaining / oldTerm : oldPayment;
+            const newTerm = newPayment > 0 ? Math.ceil(newRemaining / newPayment) : 0;
+            preview.innerHTML = `<strong>Было:</strong> ${formatMoney(oldRemaining, true)} • ${formatMoney(oldPayment, true)} • ${oldTerm} ${getTrancheWord(oldTerm)}<br><strong>Станет:</strong> ${formatMoney(newRemaining, true)} • ${formatMoney(newPayment, true)} • ${newTerm} ${getTrancheWord(newTerm)}`;
         }
 
         function submitEarlyRepayment() {
@@ -1921,20 +2283,25 @@
                 return;
             }
             
-            if (amount > c.remainingAmount) {
-                showCustomAlert("Ошибка ввода", "Сумма досрочного платежа не может превышать текущий остаток долга.");
-                return;
-            }
-            
             const repayType = document.querySelector('input[name="earlyRepayType"]:checked').value;
             const oldRemaining = c.remainingAmount;
-            const newRemaining = parseFloat((c.remainingAmount - amount).toFixed(2));
+            const actualAmount = Math.min(amount, oldRemaining);
+            const oldMonthlyPayment = c.monthlyPayment;
+            const newRemaining = parseFloat((c.remainingAmount - actualAmount).toFixed(2));
             
             c.remainingAmount = newRemaining;
+            c.earlyRepayments.push({
+                id: createId(), amount: actualAmount, paidAt: new Date().toISOString(), mode: repayType,
+                oldRemainingAmount: oldRemaining, newRemainingAmount: newRemaining,
+                oldMonthlyPayment, newMonthlyPayment: oldMonthlyPayment, comment: ''
+            });
+            c.updatedAt = new Date().toISOString();
             
             // Если кредит выплачен досрочно полностью
             if (newRemaining === 0) {
-                c.status = 'paid';
+                c.status = 'closed';
+                c.closedAt = new Date().toISOString();
+                saveCredits();
                 showToast(`🎉 Поздравляем! Досрочный платёж полностью закрыл кредит "${c.bank}"!`);
                 closeEarlyRepaymentModal();
                 renderAll();
@@ -1946,13 +2313,14 @@
                 // Снижаем платёж: сохраняем количество месяцев (срок), уменьшаем сумму платежа
                 const termLeft = Math.max(1, Math.ceil(oldRemaining / c.monthlyPayment));
                 c.monthlyPayment = parseFloat((newRemaining / termLeft).toFixed(2));
+                c.earlyRepayments.at(-1).newMonthlyPayment = c.monthlyPayment;
                 showToast(`Досрочный платёж внесен! Ежемесячный платёж снижен до ${formatMoney(c.monthlyPayment, true)}`);
             } else {
                 // Сокращаем срок: платёж прежний, срок (количество оставшихся траншей) пересчитается автоматически в графике
                 showToast(`Досрочный платёж внесен! Срок кредита значительно сокращён.`);
             }
             
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            saveCredits();
             closeEarlyRepaymentModal();
             renderAll();
             
@@ -2019,7 +2387,8 @@
                 showToast(`Ежемесячный платёж обновлён до ${formatMoney(newValue, true)}`);
             }
 
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            c.updatedAt = new Date().toISOString();
+            saveCredits();
             closeTrancheEditModal();
             
             renderAll();
@@ -2040,7 +2409,7 @@
 
             const closingSoon = credits
                 .map((c, originalIndex) => ({ ...c, originalIndex, tranchesLeft: getTranchesLeft(c) }))
-                .filter(c => c.tranchesLeft > 0 && c.tranchesLeft <= 2)
+                .filter(c => isCreditActive(c) && c.tranchesLeft > 0 && c.tranchesLeft <= 2)
                 .sort((a, b) => a.tranchesLeft - b.tranchesLeft || (parseFloat(a.remainingAmount) || 0) - (parseFloat(b.remainingAmount) || 0));
 
             if (closingSoon.length === 0) {
@@ -2062,7 +2431,7 @@
                 row.onclick = () => openTranchesModal(c.originalIndex, event);
                 row.innerHTML = `
                     <div class="min-w-0">
-                        <h4 class="text-xs font-extrabold text-slate-900 truncate">${c.bank} <span class="text-[10px] font-normal text-slate-500">(${c.type})</span></h4>
+                        <h4 class="text-xs font-extrabold text-slate-900 truncate">${escapeHTML(c.bank)} <span class="text-[10px] font-normal text-slate-500">(${escapeHTML(c.type)})</span></h4>
                         <p class="text-[10px] text-slate-500 font-semibold leading-snug">
                             Осталось: <span class="text-emerald-700 font-extrabold">${c.tranchesLeft} ${getTrancheWord(c.tranchesLeft)}</span> • до ${endDateText}
                         </p>
@@ -2086,23 +2455,30 @@
             const container = document.getElementById('allCreditsContainer');
             container.innerHTML = '';
 
-            let filtered = [...credits];
+            let filtered = credits.map((credit, originalIndex) => ({ credit, originalIndex }));
             if (currentFilter === 'active') {
-                filtered = credits.filter(c => parseFloat(c.remainingAmount) > 0);
-            } else if (currentFilter === 'paid') {
-                filtered = credits.filter(c => parseFloat(c.remainingAmount) === 0);
+                filtered = filtered.filter(({ credit }) => isCreditActive(credit));
+            } else if (currentFilter === 'closed') {
+                filtered = filtered.filter(({ credit }) => credit.status === 'closed');
+            } else if (currentFilter === 'archived') {
+                filtered = filtered.filter(({ credit }) => credit.status === 'archived');
+            } else {
+                filtered = filtered.filter(({ credit }) => credit.status !== 'archived');
             }
 
             if (filtered.length === 0) {
+                const emptyMessage = currentFilter === 'active'
+                    ? 'Активных кредитов нет. Добавьте новый кредит или посмотрите погашенные.'
+                    : currentFilter === 'archived' ? 'Архив пока пуст.' : 'Нет кредитов по выбранному фильтру.';
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl p-6 text-center text-slate-400 border border-slate-100 text-xs">
-                        Нет кредитов по выбранному фильтру
+                        ${emptyMessage}
                     </div>
                 `;
                 return;
             }
 
-            filtered.forEach((c, index) => {
+            filtered.forEach(({ credit: c, originalIndex: index }) => {
                 const total = parseFloat(c.totalAmount) || 0;
                 const remaining = parseFloat(c.remainingAmount) || 0;
                 const paid = total - remaining;
@@ -2110,6 +2486,9 @@
                 
                 const tranchesLeft = c.monthlyPayment > 0 ? Math.ceil(remaining / parseFloat(c.monthlyPayment)) : 0;
                 const calculatedEndDateStr = calculateEndDate(c.paymentDay, tranchesLeft, c.firstPaymentDate);
+                const isClosedCard = c.status === 'closed' || c.status === 'archived';
+                const paymentEntries = Object.values(c.payments || {});
+                const paymentSum = paymentEntries.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
 
                 const div = document.createElement('div');
                 div.className = "bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:border-slate-200 transition duration-300 space-y-3 cursor-pointer";
@@ -2121,13 +2500,13 @@
                         <div class="flex items-center gap-3">
                             ${getBankLogo(c.bank)}
                             <div>
-                                <h4 class="font-bold text-slate-800 text-sm leading-tight">${c.bank}</h4>
-                                <p class="text-[10px] text-slate-500 font-medium">${c.type}</p>
+                                <h4 class="font-bold text-slate-800 text-sm leading-tight">${escapeHTML(c.bank)}</h4>
+                                <p class="text-[10px] text-slate-500 font-medium">${escapeHTML(c.type)}</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="font-extrabold text-slate-900 text-sm block">${formatMoney(remaining, true)}</span>
-                            <span class="text-[10px] text-slate-500 block font-medium">из ${formatMoney(total, true)}</span>
+                            <span class="font-extrabold ${isClosedCard ? 'text-emerald-600' : 'text-slate-900'} text-sm block">${isClosedCard ? 'Погашен' : formatMoney(remaining, true)}</span>
+                            <span class="text-[10px] text-slate-500 block font-medium">${isClosedCard ? (c.closedAt ? formatDateRU(new Date(c.closedAt)) : '—') : `из ${formatMoney(total, true)}`}</span>
                         </div>
                     </div>
 
@@ -2146,8 +2525,11 @@
                         </div>
                     </div>
 
+                    ${isClosedCard ? `<div class="grid grid-cols-2 gap-2 text-[10px] bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div><span class="text-slate-500 block">Платежей</span><strong class="text-emerald-700">${paymentEntries.length}</strong></div><div class="text-right"><span class="text-slate-500 block">Учтено в истории</span><strong class="text-emerald-700">${formatMoney(paymentSum, true)}</strong></div></div>` : ''}
+
                     <div class="flex gap-2 pt-2" onclick="event.stopPropagation();">
-                        <button onclick="openEditModal(${index}, event)" class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">Редактировать</button>
+                        <button onclick="openPaymentHistory(${index}, event)" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition border border-indigo-100">История</button>
+                        ${c.status === 'closed' ? `<button onclick="archiveCredit(${index}, true, event)" class="flex-1 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px] transition">В архив</button>` : c.status === 'archived' ? `<button onclick="archiveCredit(${index}, false, event)" class="flex-1 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition">Вернуть</button>` : `<button onclick="openEditModal(${index}, event)" class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">Редактировать</button>`}
                         <button onclick="deleteCredit(${index})" class="px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition flex items-center justify-center border border-rose-100">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
@@ -2172,14 +2554,15 @@
             ];
 
             const today = new Date();
-            let simulationCredits = credits.map(c => ({
+            let simulationCredits = credits.filter(isCreditActive).map(c => ({
                 bank: c.bank,
                 type: c.type,
                 remaining: parseFloat(c.remainingAmount) || 0,
                 payment: parseFloat(c.monthlyPayment) || 0,
                 day: Number(c.paymentDay),
                 paymentDay: Number(c.paymentDay),
-                firstPaymentDate: c.firstPaymentDate || ''
+                firstPaymentDate: c.firstPaymentDate || '',
+                payments: c.payments || {}
             }));
 
             // Прогноз на 6 месяцев вперед
@@ -2196,27 +2579,37 @@
 
                 simulationCredits.forEach(sc => {
                     if (sc.remaining > 0 && isCreditDueInMonth(sc, simDate)) {
-                        const paidInSimMonth = Math.min(sc.remaining, sc.payment);
-                        monthlyTotalSum += paidInSimMonth;
+                        const record = i === 0 ? sc.payments[getMonthKey(simDate)] : null;
+                        const alreadyPaid = Number(record?.amount) || 0;
+                        const required = Number(record?.requiredAmount) || Math.min(sc.remaining + alreadyPaid, sc.payment);
+                        const paidInSimMonth = record?.paid ? 0 : Math.min(sc.remaining, Math.max(0, required - alreadyPaid));
+                        monthlyTotalSum += required;
                         const dueDate = getPaymentDateForMonth(sc, simDate);
+                        const days = i === 0 ? getDaysDiffForCredit(sc) : null;
+                        const statusText = record?.paid ? 'Оплачено' : record?.partial ? `Частично: ${formatMoney(alreadyPaid)}` : days < 0 ? 'Просрочено' : 'Ожидает оплаты';
+                        const statusClass = record?.paid ? 'text-emerald-600' : record?.partial ? 'text-amber-600' : days < 0 ? 'text-rose-600' : 'text-slate-400';
 
                         monthlyTranchesHTML += `
                             <div class="flex justify-between items-center text-xs py-1.5 border-b border-slate-100 last:border-0">
                                 <div>
-                                    <span class="font-bold text-slate-800 block">${sc.bank} <span class="text-[10px] font-normal text-slate-400">(${sc.type})</span></span>
-                                    <span class="text-[10px] text-slate-400">Платёж ${formatDateRU(dueDate)} • Остаток: ${formatMoney(sc.remaining - paidInSimMonth, true)}</span>
+                                    <span class="font-bold text-slate-800 block">${escapeHTML(sc.bank)} <span class="text-[10px] font-normal text-slate-400">(${escapeHTML(sc.type)})</span></span>
+                                    <span class="text-[10px] ${statusClass}">Платёж ${formatDateRU(dueDate)} • ${statusText}</span>
                                 </div>
-                                <span class="font-extrabold text-slate-900">${formatMoney(paidInSimMonth, true)}</span>
+                                <span class="font-extrabold text-slate-900">${formatMoney(record?.paid ? alreadyPaid : paidInSimMonth, true)}</span>
                             </div>
                         `;
                     }
                 });
 
                 // Вычитаем сумму из симулятора только в месяцах, где платёж уже должен быть
-                simulationCredits = simulationCredits.map(sc => ({
-                    ...sc,
-                    remaining: isCreditDueInMonth(sc, simDate) ? Math.max(0, parseFloat((sc.remaining - sc.payment).toFixed(2))) : sc.remaining
-                }));
+                simulationCredits = simulationCredits.map(sc => {
+                    if (!isCreditDueInMonth(sc, simDate)) return sc;
+                    const record = i === 0 ? sc.payments[getMonthKey(simDate)] : null;
+                    const alreadyPaid = Number(record?.amount) || 0;
+                    const required = Number(record?.requiredAmount) || Math.min(sc.remaining + alreadyPaid, sc.payment);
+                    const deduction = record?.paid ? 0 : Math.min(sc.remaining, Math.max(0, required - alreadyPaid));
+                    return { ...sc, remaining: Math.max(0, Number((sc.remaining - deduction).toFixed(2))) };
+                });
 
                 if (monthlyTotalSum === 0) {
                     continue;
@@ -2284,7 +2677,7 @@
                 div.className = "space-y-1";
                 div.innerHTML = `
                     <div class="flex justify-between text-xs">
-                        <span class="font-semibold text-slate-700">${bank}</span>
+                        <span class="font-semibold text-slate-700">${escapeHTML(bank)}</span>
                         <span class="font-bold text-slate-900">${formatMoney(bankDebt, true)} (${percent}%)</span>
                     </div>
                     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -2303,6 +2696,8 @@
                     element.addEventListener('input', runFormAutoCalculations);
                 }
             });
+            document.getElementById('earlyRepayAmount')?.addEventListener('input', updateEarlyRepaymentPreview);
+            document.querySelectorAll('input[name="earlyRepayType"]').forEach(input => input.addEventListener('change', updateEarlyRepaymentPreview));
         }
 
         function runFormAutoCalculations() {
@@ -2350,6 +2745,17 @@
                     showToast('Кредит успешно удалён.');
                 }
             );
+        }
+
+        function archiveCredit(index, shouldArchive, event) {
+            if (event) event.stopPropagation();
+            const c = credits[index];
+            if (!c) return;
+            c.status = shouldArchive ? 'archived' : 'closed';
+            c.updatedAt = new Date().toISOString();
+            saveCredits();
+            renderAll();
+            showToast(shouldArchive ? 'Кредит перемещён в архив.' : 'Кредит вернут в погашенные.');
         }
 
         function openAddModal() {
@@ -2428,15 +2834,32 @@
             const firstPaymentDate = document.getElementById('formFirstPaymentDate').value;
             const parsedFirstPaymentDate = parseLocalDate(firstPaymentDate);
             const paymentDay = parsedFirstPaymentDate ? parsedFirstPaymentDate.getDate() : Number(document.getElementById('formPaymentDay').value);
-            const status = document.getElementById('formPaidStatus').value;
-
-            if (remainingAmount > totalAmount) {
-                showCustomAlert("Ошибка ввода", "Остаток долга не может превышать общую сумму кредита!");
+            if (!bankName.trim() || (document.getElementById('formBank').value === 'Другой' && !document.getElementById('formCustomBank').value.trim())) {
+                showCustomAlert("Ошибка ввода", "Введите название банка.");
+                return;
+            }
+            if (!type.trim()) {
+                showCustomAlert("Ошибка ввода", "Введите тип кредита.");
+                return;
+            }
+            if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+                showCustomAlert("Ошибка ввода", "Сумма кредита должна быть больше нуля.");
+                return;
+            }
+            if (remainingAmount < 0 || remainingAmount > totalAmount) {
+                showCustomAlert("Ошибка ввода", "Остаток долга не может быть больше суммы кредита.");
+                return;
+            }
+            if (monthlyPayment < 0 || overpayment < 0 || paymentDay < 1 || paymentDay > 31) {
+                showCustomAlert("Ошибка ввода", "Проверьте платёж, переплату и день платежа (1–31).");
                 return;
             }
 
-            // Автоматический перевод выплаченных кредитов в статус 'paid'
-            const newCredit = {
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const existing = editIndex >= 0 ? credits[editIndex] : {};
+            const now = new Date().toISOString();
+            const newCredit = migrateCredit({
+                ...existing,
                 bank: bankName,
                 type: type,
                 totalAmount: totalAmount,
@@ -2445,10 +2868,10 @@
                 overpayment: overpayment,
                 paymentDay: paymentDay,
                 firstPaymentDate: firstPaymentDate || '',
-                status: remainingAmount === 0 ? 'paid' : status
-            };
-
-            const editIndex = parseInt(document.getElementById('editIndex').value);
+                status: remainingAmount === 0 ? 'closed' : 'active',
+                updatedAt: now,
+                closedAt: remainingAmount === 0 ? (existing.closedAt || now) : null
+            });
 
             if (editIndex >= 0) {
                 credits[editIndex] = newCredit;
@@ -2458,22 +2881,29 @@
                 showToast("Кредит успешно добавлен!");
             }
 
-            localStorage.setItem('user_credits', JSON.stringify(credits));
+            saveCredits();
             closeAddModal();
             renderAll();
         }
 
         function exportBackupToFile() {
             const dataToBackup = {
-                version: "2.6",
+                app: "Credit Tracker",
+                version: "3.0",
+                exportedAt: new Date().toISOString(),
                 currency: currentCurrency,
-                credits: credits,
-                biometrics: {
-                    biometric_credential_id: localStorage.getItem('biometric_credential_id'),
-                    biometric_enabled: localStorage.getItem('biometric_enabled')
+                settings: {
+                    monthlyIncome: Number(localStorage.getItem('monthlyIncome')) || 0,
+                    notificationsEnabled: typeof Notification !== 'undefined' && Notification.permission === 'granted'
                 },
-                pin_code: localStorage.getItem('app_pin_code'),
-                pin_enabled: localStorage.getItem('app_pin_enabled')
+                credits: credits,
+                security: {
+                    pinHash: localStorage.getItem('pinHash'),
+                    pinSalt: localStorage.getItem('pinSalt'),
+                    pinEnabled: localStorage.getItem('app_pin_enabled') === 'true',
+                    biometricEnabled: localStorage.getItem('biometric_enabled') === 'true',
+                    biometricCredentialId: localStorage.getItem('biometric_credential_id')
+                }
             };
             const jsonString = JSON.stringify(dataToBackup, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -2500,16 +2930,28 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (importedData && Array.isArray(importedData.credits)) {
-                        credits = importedData.credits;
-                        localStorage.setItem('user_credits', JSON.stringify(credits));
+                    if (importedData && Array.isArray(importedData.credits) && (!importedData.app || importedData.app === 'Credit Tracker')) {
+                        showCustomConfirm("Заменить текущие данные?", "Импорт заменит все текущие кредиты и настройки. Продолжить?", async () => {
+                        credits = importedData.credits.map(migrateCredit);
+                        saveCredits();
                         if (importedData.currency) {
                             currentCurrency = importedData.currency;
                             localStorage.setItem('currency', currentCurrency);
                             document.getElementById('settingCurrency').value = currentCurrency;
                         }
-                        if (importedData.pin_code) {
-                            localStorage.setItem('app_pin_code', importedData.pin_code);
+                        if (importedData.settings?.monthlyIncome != null) {
+                            localStorage.setItem('monthlyIncome', String(Number(importedData.settings.monthlyIncome) || 0));
+                        }
+                        if (importedData.security) {
+                            if (importedData.security.pinHash && importedData.security.pinSalt) {
+                                localStorage.setItem('pinHash', importedData.security.pinHash);
+                                localStorage.setItem('pinSalt', importedData.security.pinSalt);
+                            }
+                            localStorage.setItem('app_pin_enabled', String(importedData.security.pinEnabled !== false));
+                            if (importedData.security.biometricCredentialId) localStorage.setItem('biometric_credential_id', importedData.security.biometricCredentialId);
+                            localStorage.setItem('biometric_enabled', String(importedData.security.biometricEnabled === true));
+                        } else if (importedData.pin_code) {
+                            await storePinSecurely(String(importedData.pin_code));
                             localStorage.setItem('app_pin_enabled', importedData.pin_enabled || 'true');
                         }
                         if (importedData.biometrics) {
@@ -2523,6 +2965,7 @@
                         initializeSecurityCheck();
                         renderAll();
                         showToast("Резервная копия успешно загружена!");
+                        });
                     } else {
                         showToast("Неверный формат файла резервной копии.");
                     }
@@ -2572,7 +3015,7 @@
             }
 
             credits.forEach(c => {
-                if (c.status === 'unpaid' && parseFloat(c.remainingAmount) > 0) {
+                if (isCreditActive(c) && !isCreditPaidForMonth(c)) {
                     const daysDiff = getDaysDiff(c.paymentDay);
                     if (daysDiff === 2 || daysDiff === 3) {
                         new Notification("Напоминание о списании", {
@@ -2588,10 +3031,10 @@
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = "bg-slate-900 text-white text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto";
-            toast.innerHTML = `
-                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span>${message}</span>
-            `;
+            toast.innerHTML = `<svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            const text = document.createElement('span');
+            text.textContent = message;
+            toast.appendChild(text);
             container.appendChild(toast);
             
             setTimeout(() => {
